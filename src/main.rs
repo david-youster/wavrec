@@ -1,8 +1,10 @@
+use clap::Parser;
 use std::process;
-use wavrec::run;
+use wavrec::{run, Args};
 
 fn main() {
-    if let Err(err) = run() {
+    let args = Args::parse();
+    if let Err(err) = run(args) {
         eprintln!("Application failed with error: {:#?}", err);
         process::exit(1);
     }

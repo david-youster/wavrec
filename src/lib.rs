@@ -2,6 +2,7 @@ mod audio;
 mod wave;
 
 use audio::{sys::LoopbackRecorder, AudioFormatInfo, AudioLoopback, SampleFormat};
+use clap::Parser;
 use std::{
     error::Error,
     fs::{self, File},
@@ -22,6 +23,11 @@ type Nothing = Res<()>;
 const BIT_DEPTH: u8 = 16;
 const SAMPLE_RATE: u32 = 44100;
 const NUM_CHANNELS: u8 = 2;
+
+#[derive(Parser)]
+pub struct Args {
+    file_name: String,
+}
 
 struct WaveWriter {
     buffered_writer: BufWriter<File>,
@@ -81,13 +87,13 @@ impl Drop for WaveWriter {
     }
 }
 
-pub fn run() -> Nothing {
+pub fn run(args: Args) -> Nothing {
     let is_running = Arc::new(AtomicBool::new(true));
     let (audio_transmitter, audio_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = mpsc::channel();
 
     setup_terminate_handler(Arc::clone(&is_running));
     run_audio_thread(audio_transmitter);
-    run_processing_loop(audio_receiver, Arc::clone(&is_running))?;
+    run_processing_loop(&args.file_name, audio_receiver, Arc::clone(&is_running))?;
 
     Ok(())
 }
@@ -112,9 +118,13 @@ fn run_audio_thread(transmitter: Sender<Vec<u8>>) {
     });
 }
 
-fn run_processing_loop(receiver: Receiver<Vec<u8>>, is_running: Arc<AtomicBool>) -> Nothing {
+fn run_processing_loop(
+    file_name: &str,
+    receiver: Receiver<Vec<u8>>,
+    is_running: Arc<AtomicBool>,
+) -> Nothing {
     // Handle the captured data sent from the audio thread
-    let mut file_writer = WaveWriter::open("./wavdata.wav")?;
+    let mut file_writer = WaveWriter::open(file_name)?;
     while is_running.load(Ordering::Relaxed) {
         let _ = receiver.try_recv().map(|chunk| {
             // TODO - write failure should be handled
