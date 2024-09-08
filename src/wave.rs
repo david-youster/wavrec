@@ -92,13 +92,13 @@ impl WaveFile {
     pub fn write(&self, file_name: &str) -> Nothing {
         let header_bytes = self.header.as_bytes();
         let data_bytes = self.data.as_bytes();
-        let mut file = File::create(file_name.to_string())?;
-        file.write(&header_bytes)?;
-        file.write(&data_bytes)?;
+        let mut file = File::create(file_name)?;
+        file.write_all(&header_bytes)?;
+        file.write_all(&data_bytes)?;
         Ok(())
     }
 
-    fn create_header_section(data: &Vec<u8>, format: AudioFormatInfo) -> Res<WaveHeader> {
+    fn create_header_section(data: &[u8], format: AudioFormatInfo) -> Res<WaveHeader> {
         // RIFF
         let file_description_header = b"RIFF".to_owned();
 
@@ -116,16 +116,13 @@ impl WaveFile {
         let type_format = 1u16.to_le_bytes();
         let num_channels = (format.num_channels as u16).to_le_bytes();
         let sample_rate = format.sample_rate.to_le_bytes();
-        let bytes_per_second = ((format.sample_rate
-            * format.format.bit_depth() as u32
-            * format.num_channels as u32) as u32
-            / 8)
-        .to_le_bytes();
+        let bytes_per_second =
+            ((format.sample_rate * format.format.bit_depth() as u32 * format.num_channels as u32)
+                / 8)
+            .to_le_bytes();
         let block_alignment =
             ((format.format.bit_depth() * format.num_channels) as u16).to_le_bytes();
-        let bit_depth: TwoByteField = (format.format.bit_depth() as u16)
-            .to_le_bytes()
-            .try_into()?;
+        let bit_depth: TwoByteField = (format.format.bit_depth() as u16).to_le_bytes();
 
         Ok(WaveHeader {
             file_description_header,

@@ -4,7 +4,7 @@ mod wave;
 use audio::{sys::LoopbackRecorder, AudioFormatInfo, AudioLoopback, SampleFormat};
 use clap::Parser;
 use std::{
-    env::{self, temp_dir},
+    env::{self},
     error::Error,
     fs::{self, File},
     io::{BufWriter, Read, Write},
@@ -61,7 +61,6 @@ impl WaveWriter {
         // TODO - needs to handle audio format
         let audio_data: Vec<i16> = data
             .chunks_exact(2)
-            .into_iter()
             .map(|s| i16::from_ne_bytes([s[0], s[1]]))
             .collect();
 
