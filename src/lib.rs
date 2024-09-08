@@ -1,8 +1,9 @@
 mod audio;
+pub mod cli;
 mod wave;
 
 use audio::{sys::LoopbackRecorder, AudioLoopback};
-use clap::Parser;
+use cli::Args;
 use std::{
     error::Error,
     sync::{
@@ -20,11 +21,6 @@ type Nothing = Res<()>;
 const BIT_DEPTH: u8 = 16;
 const SAMPLE_RATE: u32 = 44100;
 const NUM_CHANNELS: u8 = 2;
-
-#[derive(Parser)]
-pub struct Args {
-    file_name: String,
-}
 
 pub fn run(args: Args) -> Nothing {
     let is_running = Arc::new(AtomicBool::new(true));

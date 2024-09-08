@@ -1,6 +1,6 @@
 use clap::Parser;
 use std::process;
-use wavrec::{run, Args};
+use wavrec::{cli::Args, run};
 
 fn main() {
     let args = Args::parse();
