@@ -4,6 +4,7 @@ mod wave;
 use audio::{sys::LoopbackRecorder, AudioFormatInfo, AudioLoopback, SampleFormat};
 use clap::Parser;
 use std::{
+    env::{self, temp_dir},
     error::Error,
     fs::{self, File},
     io::{BufWriter, Read, Write},
@@ -15,6 +16,7 @@ use std::{
     },
     thread,
 };
+use uuid::Uuid;
 use wave::WaveFile;
 
 type Res<T> = Result<T, Box<dyn Error>>;
@@ -38,15 +40,19 @@ struct WaveWriter {
 
 impl WaveWriter {
     pub fn open(file_name: &str) -> Res<Self> {
-        let tmp_file_name = file_name.to_string() + ".tmp";
-        let file = File::create(&tmp_file_name)?;
+        let mut tmp_dir = env::temp_dir();
+        let tmp_file_id = Uuid::new_v4().to_string();
+        let tmp_file_name = format!("wavdata-{}", tmp_file_id);
+        tmp_dir.push(&tmp_file_name);
+
+        let file = File::create(&tmp_dir)?;
         let buffered_writer = BufWriter::new(file);
         let bytes_written = 0;
         let file_name = file_name.to_owned();
         Ok(Self {
             buffered_writer,
             file_name,
-            tmp_file_name,
+            tmp_file_name: tmp_dir.to_str().unwrap().to_owned(),
             bytes_written,
         })
     }
