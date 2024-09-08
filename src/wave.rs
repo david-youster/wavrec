@@ -1,6 +1,16 @@
-use std::{fs::File, io::Write};
+use std::{
+    env,
+    fs::{self, File},
+    io::{BufWriter, Read, Write},
+    path::Path,
+};
 
-use crate::{audio::AudioFormatInfo, Nothing, Res};
+use uuid::Uuid;
+
+use crate::{
+    audio::{AudioFormatInfo, SampleFormat},
+    Nothing, Res, NUM_CHANNELS, SAMPLE_RATE,
+};
 
 type TwoByteField = [u8; 2];
 type FourByteField = [u8; 4];
@@ -147,5 +157,66 @@ impl WaveFile {
             size_in_bytes,
             data,
         })
+    }
+}
+
+pub struct WaveWriter {
+    buffered_writer: BufWriter<File>,
+    file_name: String,
+    tmp_file_name: String,
+    bytes_written: usize,
+}
+
+impl WaveWriter {
+    pub fn open(file_name: &str) -> Res<Self> {
+        let mut tmp_dir = env::temp_dir();
+        let tmp_file_id = Uuid::new_v4().to_string();
+        let tmp_file_name = format!("wavdata-{}", tmp_file_id);
+        tmp_dir.push(&tmp_file_name);
+
+        let file = File::create(&tmp_dir)?;
+        let buffered_writer = BufWriter::new(file);
+        let bytes_written = 0;
+        let file_name = file_name.to_owned();
+        Ok(Self {
+            buffered_writer,
+            file_name,
+            tmp_file_name: tmp_dir.to_str().unwrap().to_owned(),
+            bytes_written,
+        })
+    }
+
+    pub fn write(&mut self, data: Vec<u8>) -> Nothing {
+        // TODO - needs to handle audio format
+        let audio_data: Vec<i16> = data
+            .chunks_exact(2)
+            .map(|s| i16::from_ne_bytes([s[0], s[1]]))
+            .collect();
+
+        unsafe {
+            self.bytes_written += self.buffered_writer.write(audio_data.align_to::<u8>().1)?;
+        }
+        Ok(())
+    }
+
+    pub fn commit(&mut self) -> Nothing {
+        self.buffered_writer.flush()?;
+        let mut data = Vec::new();
+        File::open(&self.tmp_file_name)?.read_to_end(&mut data)?;
+
+        let format = AudioFormatInfo::new(SAMPLE_RATE, NUM_CHANNELS, SampleFormat::Int16);
+        let wav = WaveFile::create(data, format)?;
+        wav.write(&self.file_name)?;
+        Ok(())
+    }
+}
+
+impl Drop for WaveWriter {
+    fn drop(&mut self) {
+        self.buffered_writer.flush().unwrap();
+
+        if Path::new(&self.tmp_file_name).exists() {
+            fs::remove_file(&self.tmp_file_name).unwrap();
+        }
     }
 }
