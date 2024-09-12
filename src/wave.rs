@@ -3,6 +3,7 @@ use std::{
     fs::{self, File},
     io::{BufWriter, Read, Write},
     path::Path,
+    sync::Arc,
 };
 
 use uuid::Uuid;
@@ -165,10 +166,11 @@ pub struct WaveWriter {
     file_name: String,
     tmp_file_name: String,
     bytes_written: usize,
+    audio_format: Arc<AudioFormatInfo>,
 }
 
 impl WaveWriter {
-    pub fn open(file_name: &str) -> Res<Self> {
+    pub fn open(file_name: &str, audio_format: Arc<AudioFormatInfo>) -> Res<Self> {
         let mut tmp_dir = env::temp_dir();
         let tmp_file_id = Uuid::new_v4().to_string();
         let tmp_file_name = format!("wavdata-{}", tmp_file_id);
@@ -183,13 +185,14 @@ impl WaveWriter {
             file_name,
             tmp_file_name: tmp_dir.to_str().unwrap().to_owned(),
             bytes_written,
+            audio_format,
         })
     }
 
     pub fn write(&mut self, data: Vec<u8>) -> Nothing {
         // TODO - needs to handle audio format
         let audio_data: Vec<i16> = data
-            .chunks_exact(2)
+            .chunks_exact(self.audio_format.format.sample_size_bytes() as usize)
             .map(|s| i16::from_ne_bytes([s[0], s[1]]))
             .collect();
 

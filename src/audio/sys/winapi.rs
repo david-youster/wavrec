@@ -1,11 +1,12 @@
 use std::sync::mpsc::Sender;
+use std::sync::Arc;
 use std::{collections::VecDeque, error::Error, fmt::Display};
 
 use wasapi::{AudioClient, Device, Direction, SampleType, ShareMode, WaveFormat};
 
 use crate::{Nothing, Res};
 
-use crate::audio::AudioLoopback;
+use crate::audio::{AudioFormatInfo, AudioLoopback, SampleFormat};
 
 const TIMEOUT: u32 = 1000000;
 
@@ -50,13 +51,21 @@ impl WasapiLoopbackRecorder {
 }
 
 impl AudioLoopback for WasapiLoopbackRecorder {
-    fn new(bit_depth: u8, sample_rate: u32, num_channels: u8) -> WasapiLoopbackRecorder {
+    fn new(format: Arc<AudioFormatInfo>) -> WasapiLoopbackRecorder {
+        let bit_depth = format.format.bit_depth() as usize;
+        let sample_rate = format.sample_rate as usize;
+        let num_channels = format.num_channels as usize;
+
+        let sample_type = match format.format {
+            SampleFormat::Int16 | SampleFormat::_Int32 => &SampleType::Int,
+            _ => &SampleType::Float,
+        };
         let format = WaveFormat::new(
-            bit_depth as usize,
-            bit_depth as usize,
-            &SampleType::Int,
-            sample_rate as usize,
-            num_channels as usize,
+            bit_depth,
+            bit_depth,
+            sample_type,
+            sample_rate,
+            num_channels,
             None,
         );
         let chunk_size = 4096;

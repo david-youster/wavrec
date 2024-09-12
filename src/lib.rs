@@ -2,7 +2,7 @@ mod audio;
 pub mod cli;
 mod wave;
 
-use audio::{sys::LoopbackRecorder, AudioLoopback};
+use audio::{sys::LoopbackRecorder, AudioFormatInfo, AudioLoopback, SampleFormat};
 use cli::Args;
 use std::{
     error::Error,
@@ -18,7 +18,6 @@ use wave::WaveWriter;
 type Res<T> = Result<T, Box<dyn Error>>;
 type Nothing = Res<()>;
 
-const BIT_DEPTH: u8 = 16;
 const SAMPLE_RATE: u32 = 44100;
 const NUM_CHANNELS: u8 = 2;
 
@@ -26,9 +25,19 @@ pub fn run(args: Args) -> Nothing {
     let is_running = Arc::new(AtomicBool::new(true));
     let (audio_transmitter, audio_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = mpsc::channel();
 
+    let audio_format = Arc::new(AudioFormatInfo {
+        sample_rate: SAMPLE_RATE,
+        num_channels: NUM_CHANNELS,
+        format: SampleFormat::Int16,
+    });
     setup_terminate_handler(Arc::clone(&is_running));
-    run_audio_thread(audio_transmitter);
-    run_processing_loop(&args.file_name, audio_receiver, Arc::clone(&is_running))?;
+    run_audio_thread(audio_transmitter, Arc::clone(&audio_format));
+    run_processing_loop(
+        &args.file_name,
+        audio_receiver,
+        Arc::clone(&audio_format),
+        Arc::clone(&is_running),
+    )?;
 
     Ok(())
 }
@@ -45,9 +54,9 @@ fn setup_terminate_handler(is_running_flag: Arc<AtomicBool>) {
 }
 
 /// Initializes the audio thread.
-fn run_audio_thread(transmitter: Sender<Vec<u8>>) {
-    thread::spawn(|| {
-        let loopback_stream = LoopbackRecorder::new(BIT_DEPTH, SAMPLE_RATE, NUM_CHANNELS);
+fn run_audio_thread(transmitter: Sender<Vec<u8>>, format: Arc<AudioFormatInfo>) {
+    thread::spawn(move || {
+        let loopback_stream = LoopbackRecorder::new(Arc::clone(&format));
         loopback_stream.init().unwrap();
         loopback_stream.capture(transmitter).unwrap();
     });
@@ -56,10 +65,11 @@ fn run_audio_thread(transmitter: Sender<Vec<u8>>) {
 fn run_processing_loop(
     file_name: &str,
     receiver: Receiver<Vec<u8>>,
+    format: Arc<AudioFormatInfo>,
     is_running: Arc<AtomicBool>,
 ) -> Nothing {
     // Handle the captured data sent from the audio thread
-    let mut file_writer = WaveWriter::open(file_name)?;
+    let mut file_writer = WaveWriter::open(file_name, format)?;
     while is_running.load(Ordering::Relaxed) {
         let _ = receiver.try_recv().map(|chunk| {
             // TODO - write failure should be handled

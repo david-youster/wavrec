@@ -1,4 +1,4 @@
-use std::sync::mpsc::Sender;
+use std::sync::{mpsc::Sender, Arc};
 
 use crate::Nothing;
 
@@ -20,6 +20,15 @@ impl SampleFormat {
             SampleFormat::_Float64 => 64,
         }
     }
+
+    pub fn sample_size_bytes(&self) -> u8 {
+        match self {
+            SampleFormat::Int16 => 2,
+            SampleFormat::_Int32 => 4,
+            SampleFormat::_Float32 => 4,
+            SampleFormat::_Float64 => 8,
+        }
+    }
 }
 
 pub struct AudioFormatInfo {
@@ -39,7 +48,7 @@ impl AudioFormatInfo {
 }
 
 pub trait AudioLoopback {
-    fn new(bit_depth: u8, sample_rate: u32, num_channels: u8) -> Self;
+    fn new(format: Arc<AudioFormatInfo>) -> Self;
     fn init(&self) -> Nothing;
     fn capture(&self, transmitter: Sender<Vec<u8>>) -> Nothing;
 }
