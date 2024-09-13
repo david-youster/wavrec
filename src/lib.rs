@@ -35,7 +35,7 @@ pub fn run(args: Args) -> Nothing {
     run_processing_loop(
         &args.file_name,
         audio_receiver,
-        audio_format.format,
+        audio_format,
         Arc::clone(&is_running),
     )?;
 
@@ -65,7 +65,7 @@ fn run_audio_thread(transmitter: Sender<Vec<u8>>, format: Arc<AudioFormatInfo>) 
 fn run_processing_loop(
     file_name: &str,
     receiver: Receiver<Vec<u8>>,
-    format: SampleFormat,
+    format: Arc<AudioFormatInfo>,
     is_running: Arc<AtomicBool>,
 ) -> Nothing {
     // Handle the captured data sent from the audio thread

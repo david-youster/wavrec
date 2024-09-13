@@ -3,6 +3,7 @@ use std::{
     fs::{self, File},
     io::{BufWriter, Read, Write},
     path::Path,
+    sync::Arc,
 };
 
 use uuid::Uuid;
@@ -93,8 +94,8 @@ pub struct WaveFile {
 }
 
 impl WaveFile {
-    pub fn create(data: Vec<u8>, format: AudioFormatInfo) -> Res<Self> {
-        let header = WaveFile::create_header_section(&data, format)?;
+    pub fn create(data: Vec<u8>, format: Arc<AudioFormatInfo>) -> Res<Self> {
+        let header = WaveFile::create_header_section(&data, format.as_ref())?;
         let data = WaveFile::create_data_section(data)?;
         Ok(WaveFile { header, data })
     }
@@ -108,7 +109,7 @@ impl WaveFile {
         Ok(())
     }
 
-    fn create_header_section(data: &[u8], format: AudioFormatInfo) -> Res<WaveHeader> {
+    fn create_header_section(data: &[u8], format: &AudioFormatInfo) -> Res<WaveHeader> {
         // RIFF
         let file_description_header = b"RIFF".to_owned();
 
@@ -168,11 +169,11 @@ pub struct WaveWriter {
     file_name: String,
     tmp_file_name: String,
     bytes_written: usize,
-    sample_format: SampleFormat,
+    audio_format_info: Arc<AudioFormatInfo>,
 }
 
 impl WaveWriter {
-    pub fn open(file_name: &str, sample_format: SampleFormat) -> Res<Self> {
+    pub fn open(file_name: &str, audio_format_info: Arc<AudioFormatInfo>) -> Res<Self> {
         let mut tmp_dir = env::temp_dir();
         let tmp_file_id = Uuid::new_v4().to_string();
         let tmp_file_name = format!("wavdata-{}", tmp_file_id);
@@ -187,7 +188,7 @@ impl WaveWriter {
             file_name,
             tmp_file_name: tmp_dir.to_str().unwrap().to_owned(),
             bytes_written,
-            sample_format,
+            audio_format_info,
         })
     }
 
@@ -201,8 +202,7 @@ impl WaveWriter {
         let mut data = Vec::new();
         File::open(&self.tmp_file_name)?.read_to_end(&mut data)?;
 
-        let format = AudioFormatInfo::new(SAMPLE_RATE, NUM_CHANNELS, self.sample_format.clone());
-        let wav = WaveFile::create(data, format)?;
+        let wav = WaveFile::create(data, Arc::clone(&self.audio_format_info))?;
         wav.write(&self.file_name)?;
         Ok(())
     }
