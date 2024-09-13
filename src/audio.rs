@@ -31,16 +31,6 @@ pub struct AudioFormatInfo {
     pub format: SampleFormat,
 }
 
-impl AudioFormatInfo {
-    pub fn new(sample_rate: u32, num_channels: u8, format: SampleFormat) -> Self {
-        Self {
-            sample_rate,
-            num_channels,
-            format,
-        }
-    }
-}
-
 pub trait AudioLoopback {
     fn new(format: Arc<AudioFormatInfo>) -> Self;
     fn init(&self) -> Nothing;

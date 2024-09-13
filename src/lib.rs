@@ -2,7 +2,7 @@ mod audio;
 pub mod cli;
 mod wave;
 
-use audio::{sys::LoopbackRecorder, AudioFormatInfo, AudioLoopback, SampleFormat};
+use audio::{sys::LoopbackRecorder, AudioFormatInfo, AudioLoopback};
 use cli::Args;
 use std::{
     error::Error,

@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     audio::{AudioFormatInfo, SampleFormat},
-    Nothing, Res, NUM_CHANNELS, SAMPLE_RATE,
+    Nothing, Res,
 };
 
 type TwoByteField = [u8; 2];
