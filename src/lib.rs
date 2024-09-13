@@ -18,7 +18,6 @@ use wave::WaveWriter;
 type Res<T> = Result<T, Box<dyn Error>>;
 type Nothing = Res<()>;
 
-const SAMPLE_RATE: u32 = 44100;
 const NUM_CHANNELS: u8 = 2;
 
 pub fn run(args: Args) -> Nothing {
@@ -26,7 +25,7 @@ pub fn run(args: Args) -> Nothing {
     let (audio_transmitter, audio_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = mpsc::channel();
 
     let audio_format = Arc::new(AudioFormatInfo {
-        sample_rate: SAMPLE_RATE,
+        sample_rate: args.sample_rate,
         num_channels: NUM_CHANNELS,
         format: args.format,
     });
