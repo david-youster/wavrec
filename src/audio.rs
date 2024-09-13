@@ -20,15 +20,6 @@ impl SampleFormat {
             SampleFormat::_Float64 => 64,
         }
     }
-
-    pub fn sample_size_bytes(&self) -> u8 {
-        match self {
-            SampleFormat::Int16 => 2,
-            SampleFormat::_Int32 => 4,
-            SampleFormat::_Float32 => 4,
-            SampleFormat::_Float64 => 8,
-        }
-    }
 }
 
 pub struct AudioFormatInfo {
