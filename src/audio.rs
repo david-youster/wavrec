@@ -9,18 +9,18 @@ pub mod sys;
 #[derive(ValueEnum, Clone, Copy)]
 pub enum SampleFormat {
     Int16,
+    Int24,
     Int32,
     Float32,
-    Float64,
 }
 
 impl SampleFormat {
     pub fn bit_depth(&self) -> u8 {
         match self {
             SampleFormat::Int16 => 16,
+            SampleFormat::Int24 => 24,
             SampleFormat::Int32 => 32,
             SampleFormat::Float32 => 32,
-            SampleFormat::Float64 => 64,
         }
     }
 }

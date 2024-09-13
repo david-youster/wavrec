@@ -57,7 +57,7 @@ impl AudioLoopback for WasapiLoopbackRecorder {
         let num_channels = format.num_channels as usize;
 
         let sample_type = match format.format {
-            SampleFormat::Int16 | SampleFormat::Int32 => &SampleType::Int,
+            SampleFormat::Int16 | SampleFormat::Int24 | SampleFormat::Int32 => &SampleType::Int,
             _ => &SampleType::Float,
         };
         let format = WaveFormat::new(

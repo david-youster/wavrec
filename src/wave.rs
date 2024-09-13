@@ -124,8 +124,8 @@ impl WaveFile {
         let wave_description_chunk_size = 16u32.to_le_bytes().to_owned();
         // PCM header - http://bass.radio42.com/help/html/56c44e65-9b99-fa0d-d74a-3d9de3b01e89.htm
         let type_format = match format.format {
-            SampleFormat::Int16 | SampleFormat::Int32 => 1u16.to_le_bytes(),
-            SampleFormat::Float32 | SampleFormat::Float64 => 3u16.to_le_bytes(),
+            SampleFormat::Int16 | SampleFormat::Int24 | SampleFormat::Int32 => 1u16.to_le_bytes(),
+            SampleFormat::Float32 => 3u16.to_le_bytes(),
         };
         let num_channels = (format.num_channels as u16).to_le_bytes();
         let sample_rate = format.sample_rate.to_le_bytes();
