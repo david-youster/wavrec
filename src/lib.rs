@@ -32,12 +32,7 @@ pub fn run(args: Args) -> Nothing {
     });
     setup_terminate_handler(Arc::clone(&is_running));
     run_audio_thread(audio_transmitter, Arc::clone(&audio_format));
-    run_processing_loop(
-        &args.file_name,
-        audio_receiver,
-        audio_format,
-        Arc::clone(&is_running),
-    )?;
+    run_processing_loop(&args.file_name, audio_receiver, audio_format, is_running)?;
 
     Ok(())
 }
