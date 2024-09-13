@@ -28,11 +28,16 @@ pub fn run(args: Args) -> Nothing {
     let audio_format = Arc::new(AudioFormatInfo {
         sample_rate: SAMPLE_RATE,
         num_channels: NUM_CHANNELS,
-        format: SampleFormat::Int16,
+        format: args.format,
     });
     setup_terminate_handler(Arc::clone(&is_running));
     run_audio_thread(audio_transmitter, Arc::clone(&audio_format));
-    run_processing_loop(&args.file_name, audio_receiver, Arc::clone(&is_running))?;
+    run_processing_loop(
+        &args.file_name,
+        audio_receiver,
+        audio_format.format,
+        Arc::clone(&is_running),
+    )?;
 
     Ok(())
 }
@@ -60,10 +65,11 @@ fn run_audio_thread(transmitter: Sender<Vec<u8>>, format: Arc<AudioFormatInfo>) 
 fn run_processing_loop(
     file_name: &str,
     receiver: Receiver<Vec<u8>>,
+    format: SampleFormat,
     is_running: Arc<AtomicBool>,
 ) -> Nothing {
     // Handle the captured data sent from the audio thread
-    let mut file_writer = WaveWriter::open(file_name)?;
+    let mut file_writer = WaveWriter::open(file_name, format)?;
     while is_running.load(Ordering::Relaxed) {
         let _ = receiver.try_recv().map(|chunk| {
             // TODO - write failure should be handled

@@ -1,23 +1,26 @@
 use std::sync::{mpsc::Sender, Arc};
 
+use clap::ValueEnum;
+
 use crate::Nothing;
 
 pub mod sys;
 
+#[derive(ValueEnum, Clone, Copy)]
 pub enum SampleFormat {
     Int16,
-    _Int32,
-    _Float32,
-    _Float64,
+    Int32,
+    Float32,
+    Float64,
 }
 
 impl SampleFormat {
     pub fn bit_depth(&self) -> u8 {
         match self {
             SampleFormat::Int16 => 16,
-            SampleFormat::_Int32 => 32,
-            SampleFormat::_Float32 => 32,
-            SampleFormat::_Float64 => 64,
+            SampleFormat::Int32 => 32,
+            SampleFormat::Float32 => 32,
+            SampleFormat::Float64 => 64,
         }
     }
 }

@@ -122,8 +122,11 @@ impl WaveFile {
 
         // TODO - should be taken from the format
         let wave_description_chunk_size = 16u32.to_le_bytes().to_owned();
-        // PCM header
-        let type_format = 1u16.to_le_bytes();
+        // PCM header - http://bass.radio42.com/help/html/56c44e65-9b99-fa0d-d74a-3d9de3b01e89.htm
+        let type_format = match format.format {
+            SampleFormat::Int16 | SampleFormat::Int32 => 1u16.to_le_bytes(),
+            SampleFormat::Float32 | SampleFormat::Float64 => 3u16.to_le_bytes(),
+        };
         let num_channels = (format.num_channels as u16).to_le_bytes();
         let sample_rate = format.sample_rate.to_le_bytes();
         let bytes_per_second =
@@ -131,7 +134,7 @@ impl WaveFile {
                 / 8)
             .to_le_bytes();
         let block_alignment =
-            ((format.format.bit_depth() * format.num_channels) as u16).to_le_bytes();
+            (((format.format.bit_depth() * format.num_channels) / 8) as u16).to_le_bytes();
         let bit_depth: TwoByteField = (format.format.bit_depth() as u16).to_le_bytes();
 
         Ok(WaveHeader {
@@ -165,10 +168,11 @@ pub struct WaveWriter {
     file_name: String,
     tmp_file_name: String,
     bytes_written: usize,
+    sample_format: SampleFormat,
 }
 
 impl WaveWriter {
-    pub fn open(file_name: &str) -> Res<Self> {
+    pub fn open(file_name: &str, sample_format: SampleFormat) -> Res<Self> {
         let mut tmp_dir = env::temp_dir();
         let tmp_file_id = Uuid::new_v4().to_string();
         let tmp_file_name = format!("wavdata-{}", tmp_file_id);
@@ -183,6 +187,7 @@ impl WaveWriter {
             file_name,
             tmp_file_name: tmp_dir.to_str().unwrap().to_owned(),
             bytes_written,
+            sample_format,
         })
     }
 
@@ -196,7 +201,7 @@ impl WaveWriter {
         let mut data = Vec::new();
         File::open(&self.tmp_file_name)?.read_to_end(&mut data)?;
 
-        let format = AudioFormatInfo::new(SAMPLE_RATE, NUM_CHANNELS, SampleFormat::Int16);
+        let format = AudioFormatInfo::new(SAMPLE_RATE, NUM_CHANNELS, self.sample_format.clone());
         let wav = WaveFile::create(data, format)?;
         wav.write(&self.file_name)?;
         Ok(())
