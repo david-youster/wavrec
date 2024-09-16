@@ -32,12 +32,12 @@ pub struct AudioFormatInfo {
 }
 
 impl AudioFormatInfo {
-    /// Return the number of bits per sample for the chosen [SampleFormat].
+    /// Return the number of bits per sample for the chosen [`SampleFormat`].
     pub fn bit_depth(&self) -> u8 {
         self.format.bit_depth()
     }
 
-    /// Return the audio type header to the chosen [SampleFormat].
+    /// Return the audio type header to the chosen [`SampleFormat`].
     /// `1` should be used for PCM (integer) audio, `3` for floating point.
     pub fn type_format_header(&self) -> u16 {
         match self.format {

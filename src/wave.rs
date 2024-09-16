@@ -15,42 +15,35 @@ type FourByteField = [u8; 4];
 
 const BYTES_IN_HEADER: usize = 44;
 
-// http://www.ringthis.com/dev/wave_format.htm
+/// Represents the content of the header section of the WAVE file format.
+/// Some resources describing the file format (last accessed 16/09/24):
+/// - http://www.ringthis.com/dev/wave_format.htm
+/// - http://soundfile.sapp.org/doc/WaveFormat/
 struct WaveHeader {
-    // RIFF marker
     file_description_header: FourByteField,
 
-    // File size less the 4 bytes of the RIFF marker,
-    // and the 4 bytes of this field
+    // File size less the 4 bytes of the RIFF marker, and the 4 bytes of this field
     file_size: FourByteField,
 
-    // WAVE description header
     wave_description_header: FourByteField,
-
-    // fmt description - 'fmt' string plus null character
     fmt_description: FourByteField,
 
-    // Size of WAVE description chunk (2 bytes) -> 16
+    // This is the size in bytes of the type format, channels, sample rate, bytes per second, block
+    // alignment and bit depth sections.
     wave_description_chunk_size: FourByteField,
 
-    // PCM = 1
+    // PCM audio = 1/ Floaing point audio = 3
     type_format: TwoByteField,
 
-    // Mono/Stereo flag
     num_channels: TwoByteField,
-
     sample_rate: FourByteField,
-
-    // Bit depth / 8 * sample rate
     bytes_per_second: FourByteField,
-
-    // Num channels * bytes per sample
     block_alignment: TwoByteField,
-
     bit_depth: TwoByteField,
 }
 
 impl WaveHeader {
+    /// Build the formatted WAV file header, ready for writing
     fn as_bytes(&self) -> Vec<u8> {
         let mut data: Vec<u8> = Vec::with_capacity(BYTES_IN_HEADER);
         data.extend_from_slice(&self.file_description_header);
@@ -67,16 +60,16 @@ impl WaveHeader {
         data
     }
 }
+
+/// Represents the data section of a WAV file, including the 'data' header
 struct WaveData {
-    // ASCII text 'data'
     data_header: FourByteField,
-
     size_in_bytes: FourByteField,
-
     data: Vec<u8>,
 }
 
 impl WaveData {
+    /// Return the formatted bytes in the data section, ready for writing
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut data = Vec::with_capacity(8 + self.data.len());
         data.extend_from_slice(&self.data_header);
@@ -86,18 +79,22 @@ impl WaveData {
     }
 }
 
+/// Represents a complete WAV file, separated into header and data sections. The `header` and#
+/// `data` properties should contain everything necessary to write a valid WAV file.
 pub struct WaveFile {
     header: WaveHeader,
     data: WaveData,
 }
 
 impl WaveFile {
+    /// Prepare the data for a new WAV file
     pub fn create(data: Vec<u8>, format: Arc<AudioFormatInfo>) -> Res<Self> {
         let header = WaveFile::create_header_section(&data, format.as_ref())?;
         let data = WaveFile::create_data_section(data)?;
         Ok(WaveFile { header, data })
     }
 
+    /// Write the WAV data to file
     pub fn write(&self, file_name: &str) -> Nothing {
         let header_bytes = self.header.as_bytes();
         let data_bytes = self.data.as_bytes();
@@ -108,20 +105,11 @@ impl WaveFile {
     }
 
     fn create_header_section(data: &[u8], format: &AudioFormatInfo) -> Res<WaveHeader> {
-        // RIFF
         let file_description_header = b"RIFF".to_owned();
-
-        let file_size: FourByteField = ((data.len() + (44 - 8)) as u32).to_le_bytes();
-
-        // WAVE
+        let file_size: FourByteField = ((data.len() + (BYTES_IN_HEADER - 8)) as u32).to_le_bytes();
         let wave_description_header = b"WAVE".to_owned();
-
-        // fmt\0
         let fmt_description = b"fmt ".to_owned();
-
-        // TODO - should be taken from the format
         let wave_description_chunk_size = 16u32.to_le_bytes().to_owned();
-        // PCM header - http://bass.radio42.com/help/html/56c44e65-9b99-fa0d-d74a-3d9de3b01e89.htm
         let type_format = format.type_format_header().to_le_bytes();
         let num_channels = (format.num_channels as u16).to_le_bytes();
         let sample_rate = format.sample_rate.to_le_bytes();
@@ -155,6 +143,8 @@ impl WaveFile {
     }
 }
 
+/// Buffered WAV file writer. Opening a WAV file allows writing to a buffer, which can later be
+/// written to disk.
 pub struct WaveWriter {
     buffered_writer: BufWriter<File>,
     file_name: String,
@@ -164,6 +154,9 @@ pub struct WaveWriter {
 }
 
 impl WaveWriter {
+    /// Prepares a new WaveWriter for writing audio data to disk.
+    /// This uses a temporary file as a data buffer, which can later be written to an correctly
+    /// formatted WAV file.
     pub fn open(file_name: &str, audio_format_info: Arc<AudioFormatInfo>) -> Res<Self> {
         let mut tmp_dir = env::temp_dir();
         let tmp_file_id = Uuid::new_v4().to_string();
@@ -174,6 +167,7 @@ impl WaveWriter {
         let buffered_writer = BufWriter::new(file);
         let bytes_written = 0;
         let file_name = file_name.to_owned();
+
         Ok(Self {
             buffered_writer,
             file_name,
@@ -183,11 +177,13 @@ impl WaveWriter {
         })
     }
 
+    /// Write a chunk of data to the buffer. Audio data should be appropriately formatted.
     pub fn write(&mut self, data: Vec<u8>) -> Nothing {
         self.bytes_written += self.buffered_writer.write(&data)?;
         Ok(())
     }
 
+    /// Commit the written audio data to disk
     pub fn commit(&mut self) -> Nothing {
         self.buffered_writer.flush()?;
         let mut data = Vec::new();
@@ -200,6 +196,7 @@ impl WaveWriter {
 }
 
 impl Drop for WaveWriter {
+    /// Clean up the temporary file used by the [BufWriter]
     fn drop(&mut self) {
         self.buffered_writer.flush().unwrap();
 
