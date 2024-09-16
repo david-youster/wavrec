@@ -32,7 +32,7 @@ struct WaveHeader {
     // alignment and bit depth sections.
     wave_description_chunk_size: FourByteField,
 
-    // PCM audio = 1/ Floaing point audio = 3
+    // PCM audio = 1 / Floating point audio = 3
     type_format: TwoByteField,
 
     num_channels: TwoByteField,
