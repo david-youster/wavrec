@@ -6,7 +6,7 @@ use crate::Nothing;
 
 pub mod sys;
 
-#[derive(ValueEnum, Clone)]
+#[derive(ValueEnum, Clone, Copy)]
 pub enum SampleFormat {
     Int16,
     Int24,
