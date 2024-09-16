@@ -79,7 +79,7 @@ impl WaveData {
     }
 }
 
-/// Represents a complete WAV file, separated into header and data sections. The `header` and#
+/// Represents a complete WAV file, separated into header and data sections. The `header` and
 /// `data` properties should contain everything necessary to write a valid WAV file.
 pub struct WaveFile {
     header: WaveHeader,
