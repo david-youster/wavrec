@@ -16,6 +16,8 @@ use crate::{
 type TwoByteField = [u8; 2];
 type FourByteField = [u8; 4];
 
+const BYTES_IN_HEADER: usize = 44;
+
 // http://www.ringthis.com/dev/wave_format.htm
 struct WaveHeader {
     // RIFF marker
@@ -53,7 +55,6 @@ struct WaveHeader {
 
 impl WaveHeader {
     fn as_bytes(&self) -> Vec<u8> {
-        const BYTES_IN_HEADER: usize = 44;
         let mut data: Vec<u8> = Vec::with_capacity(BYTES_IN_HEADER);
         data.extend_from_slice(&self.file_description_header);
         data.extend_from_slice(&self.file_size);
