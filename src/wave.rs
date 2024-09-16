@@ -8,10 +8,7 @@ use std::{
 
 use uuid::Uuid;
 
-use crate::{
-    audio::{AudioFormatInfo, SampleFormat},
-    Nothing, Res,
-};
+use crate::{audio::AudioFormatInfo, Nothing, Res};
 
 type TwoByteField = [u8; 2];
 type FourByteField = [u8; 4];
@@ -125,19 +122,12 @@ impl WaveFile {
         // TODO - should be taken from the format
         let wave_description_chunk_size = 16u32.to_le_bytes().to_owned();
         // PCM header - http://bass.radio42.com/help/html/56c44e65-9b99-fa0d-d74a-3d9de3b01e89.htm
-        let type_format = match format.format {
-            SampleFormat::Int16 | SampleFormat::Int24 | SampleFormat::Int32 => 1u16.to_le_bytes(),
-            SampleFormat::Float32 => 3u16.to_le_bytes(),
-        };
+        let type_format = format.type_format_header().to_le_bytes();
         let num_channels = (format.num_channels as u16).to_le_bytes();
         let sample_rate = format.sample_rate.to_le_bytes();
-        let bytes_per_second =
-            ((format.sample_rate * format.format.bit_depth() as u32 * format.num_channels as u32)
-                / 8)
-            .to_le_bytes();
-        let block_alignment =
-            (((format.format.bit_depth() * format.num_channels) / 8) as u16).to_le_bytes();
-        let bit_depth: TwoByteField = (format.format.bit_depth() as u16).to_le_bytes();
+        let bytes_per_second = format.bytes_per_second().to_le_bytes();
+        let block_alignment = format.block_alignment().to_le_bytes();
+        let bit_depth: TwoByteField = (format.bit_depth() as u16).to_le_bytes();
 
         Ok(WaveHeader {
             file_description_header,
