@@ -21,3 +21,47 @@ impl Args {
         self.file_name.clone()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn file_name_without_extension_is_modified() {
+        let args = Args {
+            file_name: String::from("somefile"),
+            format: SampleFormat::Int16,
+            sample_rate: 44100,
+        };
+
+        assert_eq!(args.file_name(), "somefile.wav");
+    }
+
+    #[test]
+    fn file_name_with_extension_is_unchanged() {
+        let args = Args {
+            file_name: String::from("somefile.wav"),
+            format: SampleFormat::Int16,
+            sample_rate: 44100,
+        };
+
+        assert_eq!(args.file_name(), "somefile.wav");
+    }
+
+    #[test]
+    fn including_extension_is_optional() {
+        let args_1 = Args {
+            file_name: String::from("somefile"),
+            format: SampleFormat::Int16,
+            sample_rate: 44100,
+        };
+
+        let args_2 = Args {
+            file_name: String::from("somefile.wav"),
+            format: SampleFormat::Int16,
+            sample_rate: 44100,
+        };
+
+        assert_eq!(args_1.file_name(), args_2.file_name());
+    }
+}
