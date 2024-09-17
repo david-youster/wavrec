@@ -43,68 +43,7 @@ struct WaveHeader {
 }
 
 impl WaveHeader {
-    /// Build the formatted WAV file header, ready for writing
-    fn as_bytes(&self) -> Vec<u8> {
-        let mut data: Vec<u8> = Vec::with_capacity(BYTES_IN_HEADER);
-        data.extend_from_slice(&self.file_description_header);
-        data.extend_from_slice(&self.file_size);
-        data.extend_from_slice(&self.wave_description_header);
-        data.extend_from_slice(&self.fmt_description);
-        data.extend_from_slice(&self.wave_description_chunk_size);
-        data.extend_from_slice(&self.type_format);
-        data.extend_from_slice(&self.num_channels);
-        data.extend_from_slice(&self.sample_rate);
-        data.extend_from_slice(&self.bytes_per_second);
-        data.extend_from_slice(&self.block_alignment);
-        data.extend_from_slice(&self.bit_depth);
-        data
-    }
-}
-
-/// Represents the data section of a WAV file, including the 'data' header
-struct WaveData {
-    data_header: FourByteField,
-    size_in_bytes: FourByteField,
-    data: Vec<u8>,
-}
-
-impl WaveData {
-    /// Return the formatted bytes in the data section, ready for writing
-    pub fn as_bytes(&self) -> Vec<u8> {
-        let mut data = Vec::with_capacity(8 + self.data.len());
-        data.extend_from_slice(&self.data_header);
-        data.extend_from_slice(&self.size_in_bytes);
-        data.extend(&self.data);
-        data
-    }
-}
-
-/// Represents a complete WAV file, separated into header and data sections. The `header` and
-/// `data` properties should contain everything necessary to write a valid WAV file.
-pub struct WaveFile {
-    header: WaveHeader,
-    data: WaveData,
-}
-
-impl WaveFile {
-    /// Prepare the data for a new WAV file
-    pub fn create(data: Vec<u8>, format: Arc<AudioFormatInfo>) -> Res<Self> {
-        let header = WaveFile::create_header_section(&data, format.as_ref())?;
-        let data = WaveFile::create_data_section(data)?;
-        Ok(WaveFile { header, data })
-    }
-
-    /// Write the WAV data to file
-    pub fn write(&self, file_name: &str) -> Nothing {
-        let header_bytes = self.header.as_bytes();
-        let data_bytes = self.data.as_bytes();
-        let mut file = File::create(file_name)?;
-        file.write_all(&header_bytes)?;
-        file.write_all(&data_bytes)?;
-        Ok(())
-    }
-
-    fn create_header_section(data: &[u8], format: &AudioFormatInfo) -> Res<WaveHeader> {
+    fn create(data: &[u8], format: &AudioFormatInfo) -> Res<WaveHeader> {
         let file_description_header = b"RIFF".to_owned();
         let file_size: FourByteField = ((data.len() + (BYTES_IN_HEADER - 8)) as u32).to_le_bytes();
         let wave_description_header = b"WAVE".to_owned();
@@ -132,7 +71,33 @@ impl WaveFile {
         })
     }
 
-    fn create_data_section(data: Vec<u8>) -> Res<WaveData> {
+    /// Build the formatted WAV file header, ready for writing
+    fn as_bytes(&self) -> Vec<u8> {
+        let mut data: Vec<u8> = Vec::with_capacity(BYTES_IN_HEADER);
+        data.extend_from_slice(&self.file_description_header);
+        data.extend_from_slice(&self.file_size);
+        data.extend_from_slice(&self.wave_description_header);
+        data.extend_from_slice(&self.fmt_description);
+        data.extend_from_slice(&self.wave_description_chunk_size);
+        data.extend_from_slice(&self.type_format);
+        data.extend_from_slice(&self.num_channels);
+        data.extend_from_slice(&self.sample_rate);
+        data.extend_from_slice(&self.bytes_per_second);
+        data.extend_from_slice(&self.block_alignment);
+        data.extend_from_slice(&self.bit_depth);
+        data
+    }
+}
+
+/// Represents the data section of a WAV file, including the 'data' header
+struct WaveData {
+    data_header: FourByteField,
+    size_in_bytes: FourByteField,
+    data: Vec<u8>,
+}
+
+impl WaveData {
+    fn create(data: Vec<u8>) -> Res<WaveData> {
         let data_header = b"data".to_owned();
         let size_in_bytes: FourByteField = (data.len() as u32).to_le_bytes().to_owned();
         Ok(WaveData {
@@ -140,6 +105,40 @@ impl WaveFile {
             size_in_bytes,
             data,
         })
+    }
+    /// Return the formatted bytes in the data section, ready for writing
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let mut data = Vec::with_capacity(8 + self.data.len());
+        data.extend_from_slice(&self.data_header);
+        data.extend_from_slice(&self.size_in_bytes);
+        data.extend(&self.data);
+        data
+    }
+}
+
+/// Represents a complete WAV file, separated into header and data sections. The `header` and
+/// `data` properties should contain everything necessary to write a valid WAV file.
+pub struct WaveFile {
+    header: WaveHeader,
+    data: WaveData,
+}
+
+impl WaveFile {
+    /// Prepare the data for a new WAV file
+    pub fn create(data: Vec<u8>, format: Arc<AudioFormatInfo>) -> Res<Self> {
+        let header = WaveHeader::create(&data, format.as_ref())?;
+        let data = WaveData::create(data)?;
+        Ok(WaveFile { header, data })
+    }
+
+    /// Write the WAV data to file
+    pub fn write(&self, file_name: &str) -> Nothing {
+        let header_bytes = self.header.as_bytes();
+        let data_bytes = self.data.as_bytes();
+        let mut file = File::create(file_name)?;
+        file.write_all(&header_bytes)?;
+        file.write_all(&data_bytes)?;
+        Ok(())
     }
 }
 
