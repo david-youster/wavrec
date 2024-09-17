@@ -43,9 +43,9 @@ struct WaveHeader {
 }
 
 impl WaveHeader {
-    fn create(data: &[u8], format: &AudioFormatInfo) -> Res<WaveHeader> {
+    fn create(format: &AudioFormatInfo, data_size: usize) -> Res<WaveHeader> {
         let file_description_header = b"RIFF".to_owned();
-        let file_size: FourByteField = ((data.len() + (BYTES_IN_HEADER - 8)) as u32).to_le_bytes();
+        let file_size: FourByteField = ((data_size + (BYTES_IN_HEADER - 8)) as u32).to_le_bytes();
         let wave_description_header = b"WAVE".to_owned();
         let fmt_description = b"fmt ".to_owned();
         let wave_description_chunk_size = 16u32.to_le_bytes().to_owned();
@@ -126,7 +126,7 @@ pub struct WaveFile {
 impl WaveFile {
     /// Prepare the data for a new WAV file
     pub fn create(data: Vec<u8>, format: Arc<AudioFormatInfo>) -> Res<Self> {
-        let header = WaveHeader::create(&data, format.as_ref())?;
+        let header = WaveHeader::create(format.as_ref(), data.len())?;
         let data = WaveData::create(data)?;
         Ok(WaveFile { header, data })
     }
