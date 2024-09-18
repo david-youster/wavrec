@@ -72,7 +72,6 @@ pub trait AudioLoopback {
 
 #[cfg(test)]
 mod tests {
-    use std::fmt::format;
 
     use super::*;
 
