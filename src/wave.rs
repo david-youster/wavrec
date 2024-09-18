@@ -204,3 +204,123 @@ impl Drop for WaveWriter {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::audio::SampleFormat;
+
+    use super::*;
+
+    #[test]
+    fn test_create_wave_header_returns_wave_data_with_correct_static_fields() {
+        let header = create_wave_header(44100, SampleFormat::Int16, 2, 0);
+        assert_eq!(header.file_description_header, *b"RIFF");
+        assert_eq!(header.fmt_description, *b"fmt ");
+        assert_eq!(header.wave_description_header, *b"WAVE");
+        assert_eq!(u32::from_le_bytes(header.wave_description_chunk_size), 16);
+    }
+
+    #[test]
+    fn test_create_wave_header_returns_wave_data_with_correct_calculated_fields() {
+        validate_wave_header_fields(44100, SampleFormat::Int16, 2, 0);
+        validate_wave_header_fields(44100, SampleFormat::Int16, 2, 100);
+        validate_wave_header_fields(48000, SampleFormat::Int32, 4, 100);
+        validate_wave_header_fields(96000, SampleFormat::Float32, 4, 500);
+    }
+
+    #[test]
+    fn test_wave_header_bytes_contain_correct_static_data() {
+        let header = create_wave_header(44100, SampleFormat::Int16, 2, 0).as_bytes();
+        assert_eq!(header[0..4], *b"RIFF");
+        assert_eq!(header[8..12], *b"WAVE");
+        assert_eq!(header[12..16], *b"fmt ");
+
+        // Wave description chunk size
+        assert_eq!(header[16..20], 16u32.to_le_bytes());
+    }
+
+    #[test]
+    fn test_wave_header_bytes_contain_correct_calculated_data() {
+        validate_wave_header_bytes(44100, SampleFormat::Int16, 2, 0);
+    }
+
+    fn create_wave_header(
+        sample_rate: u32,
+        format: SampleFormat,
+        num_channels: u8,
+        data_size: usize,
+    ) -> WaveHeader {
+        let format = AudioFormatInfo {
+            sample_rate,
+            num_channels,
+            format,
+        };
+        WaveHeader::create(&format, data_size).unwrap()
+    }
+
+    fn validate_wave_header_fields(
+        sample_rate: u32,
+        format: SampleFormat,
+        num_channels: u8,
+        data_size: usize,
+    ) {
+        let header = create_wave_header(sample_rate, format, num_channels, data_size);
+        assert_eq!(
+            u32::from_le_bytes(header.file_size),
+            (data_size + BYTES_IN_HEADER - 8).try_into().unwrap()
+        );
+
+        assert_eq!(
+            u16::from_le_bytes(header.type_format),
+            format.type_format_header()
+        );
+        assert_eq!(u16::from_le_bytes(header.num_channels), num_channels.into());
+        assert_eq!(u32::from_le_bytes(header.sample_rate), sample_rate);
+        assert_eq!(
+            u32::from_le_bytes(header.bytes_per_second),
+            (sample_rate * format.bit_depth() as u32 * num_channels as u32) / 8
+        );
+
+        assert_eq!(
+            u16::from_le_bytes(header.block_alignment),
+            ((num_channels * format.bit_depth()) / 8).into()
+        );
+
+        assert_eq!(
+            u16::from_le_bytes(header.bit_depth),
+            format.bit_depth().into()
+        );
+    }
+
+    fn validate_wave_header_bytes(
+        sample_rate: u32,
+        format: SampleFormat,
+        num_channels: u8,
+        data_size: usize,
+    ) {
+        let header = create_wave_header(sample_rate, format, num_channels, data_size).as_bytes();
+
+        assert_eq!(
+            header[4..8],
+            ((data_size + BYTES_IN_HEADER - 8) as u32).to_le_bytes()
+        );
+
+        assert_eq!(header[20..22], format.type_format_header().to_le_bytes());
+        assert_eq!(header[22..24], (num_channels as u16).to_le_bytes());
+        assert_eq!(header[24..28], sample_rate.to_le_bytes());
+
+        // Bytes per second
+        assert_eq!(
+            header[28..32],
+            ((sample_rate * format.bit_depth() as u32 * num_channels as u32) / 8).to_le_bytes()
+        );
+
+        // Block alignment
+        assert_eq!(
+            header[32..34],
+            (((num_channels * format.bit_depth()) / 8) as u16).to_le_bytes()
+        );
+
+        assert_eq!(header[34..36], (format.bit_depth() as u16).to_le_bytes());
+    }
+}
