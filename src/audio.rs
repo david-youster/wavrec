@@ -23,6 +23,13 @@ impl SampleFormat {
             SampleFormat::Float32 => 32,
         }
     }
+
+    pub fn type_format_header(&self) -> u16 {
+        match self {
+            SampleFormat::Int16 | SampleFormat::Int24 | SampleFormat::Int32 => 1u16,
+            SampleFormat::Float32 => 3u16,
+        }
+    }
 }
 
 pub struct AudioFormatInfo {
@@ -40,10 +47,7 @@ impl AudioFormatInfo {
     /// Return the audio type header to the chosen [`SampleFormat`].
     /// `1` should be used for PCM (integer) audio, `3` for floating point.
     pub fn type_format_header(&self) -> u16 {
-        match self.format {
-            SampleFormat::Int16 | SampleFormat::Int24 | SampleFormat::Int32 => 1u16,
-            SampleFormat::Float32 => 3u16,
-        }
+        self.format.type_format_header()
     }
 
     /// Return the number of bytes per second based on the given sample rate, bit depth and number
