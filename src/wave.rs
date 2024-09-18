@@ -224,8 +224,23 @@ mod tests {
     fn test_create_wave_header_returns_wave_data_with_correct_calculated_fields() {
         validate_wave_header_fields(44100, SampleFormat::Int16, 2, 0);
         validate_wave_header_fields(44100, SampleFormat::Int16, 2, 100);
-        validate_wave_header_fields(48000, SampleFormat::Int32, 4, 100);
-        validate_wave_header_fields(96000, SampleFormat::Float32, 4, 500);
+        validate_wave_header_fields(48000, SampleFormat::Int16, 2, 100);
+        validate_wave_header_fields(96000, SampleFormat::Int16, 2, 100);
+
+        validate_wave_header_fields(44100, SampleFormat::Int24, 2, 0);
+        validate_wave_header_fields(44100, SampleFormat::Int24, 2, 100);
+        validate_wave_header_fields(48000, SampleFormat::Int24, 2, 100);
+        validate_wave_header_fields(96000, SampleFormat::Int24, 2, 100);
+
+        validate_wave_header_fields(44100, SampleFormat::Int32, 2, 0);
+        validate_wave_header_fields(44100, SampleFormat::Int32, 2, 100);
+        validate_wave_header_fields(48000, SampleFormat::Int32, 2, 100);
+        validate_wave_header_fields(96000, SampleFormat::Int32, 2, 100);
+
+        validate_wave_header_fields(44100, SampleFormat::Float32, 2, 0);
+        validate_wave_header_fields(44100, SampleFormat::Float32, 2, 100);
+        validate_wave_header_fields(48000, SampleFormat::Float32, 2, 100);
+        validate_wave_header_fields(96000, SampleFormat::Float32, 2, 100);
     }
 
     #[test]
@@ -242,6 +257,24 @@ mod tests {
     #[test]
     fn test_wave_header_bytes_contain_correct_calculated_data() {
         validate_wave_header_bytes(44100, SampleFormat::Int16, 2, 0);
+        validate_wave_header_bytes(44100, SampleFormat::Int16, 2, 100);
+        validate_wave_header_bytes(48000, SampleFormat::Int16, 2, 100);
+        validate_wave_header_bytes(96000, SampleFormat::Int16, 2, 100);
+
+        validate_wave_header_bytes(44100, SampleFormat::Int24, 2, 0);
+        validate_wave_header_bytes(44100, SampleFormat::Int24, 2, 100);
+        validate_wave_header_bytes(48000, SampleFormat::Int24, 2, 100);
+        validate_wave_header_bytes(96000, SampleFormat::Int24, 2, 100);
+
+        validate_wave_header_bytes(44100, SampleFormat::Int32, 2, 0);
+        validate_wave_header_bytes(44100, SampleFormat::Int32, 2, 100);
+        validate_wave_header_bytes(48000, SampleFormat::Int32, 2, 100);
+        validate_wave_header_bytes(96000, SampleFormat::Int32, 2, 100);
+
+        validate_wave_header_bytes(44100, SampleFormat::Float32, 2, 0);
+        validate_wave_header_bytes(44100, SampleFormat::Float32, 2, 100);
+        validate_wave_header_bytes(48000, SampleFormat::Float32, 2, 100);
+        validate_wave_header_bytes(96000, SampleFormat::Float32, 2, 100);
     }
 
     fn create_wave_header(
