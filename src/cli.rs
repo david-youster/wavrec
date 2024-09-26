@@ -11,6 +11,14 @@ pub struct Args {
 
     #[arg(short, long, default_value_t = 44100)]
     pub sample_rate: u32,
+
+    #[arg(
+        short,
+        long,
+        default_value_t = 2,
+        help = "Number of channels to capture"
+    )]
+    pub channels: u8,
 }
 
 impl Args {
@@ -32,6 +40,7 @@ mod tests {
             file_name: String::from("somefile"),
             format: SampleFormat::Int16,
             sample_rate: 44100,
+            channels: 2,
         };
 
         assert_eq!(args.file_name(), "somefile.wav");
@@ -43,6 +52,7 @@ mod tests {
             file_name: String::from("somefile.wav"),
             format: SampleFormat::Int16,
             sample_rate: 44100,
+            channels: 2,
         };
 
         assert_eq!(args.file_name(), "somefile.wav");
@@ -54,12 +64,14 @@ mod tests {
             file_name: String::from("somefile"),
             format: SampleFormat::Int16,
             sample_rate: 44100,
+            channels: 2,
         };
 
         let args_2 = Args {
             file_name: String::from("somefile.wav"),
             format: SampleFormat::Int16,
             sample_rate: 44100,
+            channels: 2,
         };
 
         assert_eq!(args_1.file_name(), args_2.file_name());

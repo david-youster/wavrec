@@ -18,15 +18,13 @@ use wave::WaveWriter;
 type Res<T> = Result<T, Box<dyn Error>>;
 type Nothing = Res<()>;
 
-const NUM_CHANNELS: u8 = 2;
-
 pub fn run(args: Args) -> Nothing {
     let is_running = Arc::new(AtomicBool::new(true));
     let (audio_transmitter, audio_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = mpsc::channel();
 
     let audio_format = Arc::new(AudioFormatInfo {
         sample_rate: args.sample_rate,
-        num_channels: NUM_CHANNELS,
+        num_channels: args.channels,
         format: args.format,
     });
     setup_terminate_handler(Arc::clone(&is_running));
