@@ -277,6 +277,56 @@ mod tests {
         validate_wave_header_bytes(96000, SampleFormat::Float32, 2, 100);
     }
 
+    #[test]
+    fn test_wave_data_contains_correct_static_data() {
+        let data = WaveData::create(vec![]).unwrap();
+        assert_eq!(data.data_header, *b"data");
+    }
+
+    #[test]
+    fn test_wave_data_conains_correct_size() {
+        let data = WaveData::create(vec![]).unwrap();
+        assert_eq!(data.size_in_bytes, 0u32.to_le_bytes());
+
+        let data = WaveData::create(vec![0u8; 100]).unwrap();
+        assert_eq!(data.size_in_bytes, 100u32.to_le_bytes());
+    }
+
+    #[test]
+    fn test_wave_data_contains_correct_data() {
+        let data = WaveData::create(vec![]).unwrap();
+        assert_eq!(data.data, vec![]);
+
+        let values: Vec<u8> = vec![1, 2, 3, 4];
+        let data = WaveData::create(values.clone()).unwrap();
+        assert_eq!(data.data, values);
+    }
+
+    #[test]
+    fn test_wave_data_bytes_contains_correct_static_data() {
+        let data = WaveData::create(vec![]).unwrap().as_bytes();
+        assert_eq!(data[0..4], *b"data");
+    }
+
+    #[test]
+    fn test_wave_data_bytes_contains_correct_size() {
+        let data = WaveData::create(vec![]).unwrap().as_bytes();
+        assert_eq!(data[4..8], 0u32.to_le_bytes());
+
+        let data = WaveData::create(vec![1, 2, 3, 4]).unwrap().as_bytes();
+        assert_eq!(data[4..8], 4u32.to_le_bytes());
+    }
+
+    #[test]
+    fn test_wave_data_bytes_contains_correct_data() {
+        let data = WaveData::create(vec![]).unwrap().as_bytes();
+        assert_eq!(data[8..], vec![]);
+
+        let values: Vec<u8> = vec![1, 2, 3, 4];
+        let data = WaveData::create(values.clone()).unwrap().as_bytes();
+        assert_eq!(data[8..], values);
+    }
+
     fn create_wave_header(
         sample_rate: u32,
         format: SampleFormat,
