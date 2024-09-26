@@ -1,4 +1,7 @@
-use std::sync::{mpsc::Sender, Arc};
+use std::{
+    fmt::Display,
+    sync::{mpsc::Sender, Arc},
+};
 
 use clap::ValueEnum;
 
@@ -61,6 +64,28 @@ impl AudioFormatInfo {
     /// It's calculated by multiplying the bytes per sample by the number of channels.
     pub fn block_alignment(&self) -> u16 {
         (self.bit_depth() as u16 * self.num_channels as u16) / 8
+    }
+}
+
+impl Display for AudioFormatInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Sample Rate: {}\nBit Depth: {}\nNumber of channels: {}\n",
+            self.sample_rate,
+            self.bit_depth(),
+            self.num_channels
+        )?;
+        write!(
+            f,
+            "Sample format: {}",
+            match self.format {
+                SampleFormat::Int16 => "Integer",
+                SampleFormat::Int24 => "Integer",
+                SampleFormat::Int32 => "Integer",
+                SampleFormat::Float32 => "Float",
+            }
+        )
     }
 }
 
