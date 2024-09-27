@@ -4,7 +4,7 @@ mod wave;
 
 use audio::{sys::LoopbackRecorder, AudioFormatInfo, AudioLoopback};
 use cli::Args;
-use log::{debug, info};
+use log::info;
 use std::{
     error::Error,
     sync::{

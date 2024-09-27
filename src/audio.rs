@@ -203,7 +203,7 @@ mod tests {
     ) -> AudioFormatInfo {
         AudioFormatInfo {
             sample_rate,
-            num_channels: num_channels as u8,
+            num_channels,
             format: sample_format,
         }
     }

@@ -55,7 +55,7 @@ impl Args {
 
 #[cfg(test)]
 mod tests {
-    use log::Level;
+    
 
     use super::*;
 
