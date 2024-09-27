@@ -55,12 +55,11 @@ impl Args {
 
 #[cfg(test)]
 mod tests {
-    
 
     use super::*;
 
     #[test]
-    fn file_name_without_extension_is_modified() {
+    fn test_file_name_without_extension_is_modified() {
         let args = Args {
             file_name: String::from("somefile"),
             format: SampleFormat::Int16,
@@ -73,7 +72,7 @@ mod tests {
     }
 
     #[test]
-    fn file_name_with_extension_is_unchanged() {
+    fn test_file_name_with_extension_is_unchanged() {
         let args = Args {
             file_name: String::from("somefile.wav"),
             format: SampleFormat::Int16,
@@ -86,7 +85,7 @@ mod tests {
     }
 
     #[test]
-    fn including_extension_is_optional() {
+    fn test_including_extension_is_optional() {
         let args_1 = Args {
             file_name: String::from("somefile"),
             format: SampleFormat::Int16,
