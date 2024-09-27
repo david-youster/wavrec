@@ -71,7 +71,7 @@ impl Display for AudioFormatInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Sample Rate: {}\nBit Depth: {}\nNumber of channels: {}\n",
+            "\nSample Rate: {}\nBit Depth: {}\nNumber of channels: {}\n",
             self.sample_rate,
             self.bit_depth(),
             self.num_channels

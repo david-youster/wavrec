@@ -6,6 +6,8 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.17", features = ["derive"] }
 ctrlc = "3.4.5"
+env_logger = "0.11.5"
+log = "0.4.22"
 uuid = {version = "1.10.0", features = ["v4", "fast-rng"]}
 wasapi = "0.15.0"
 

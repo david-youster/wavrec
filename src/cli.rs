@@ -1,6 +1,16 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
+use log::LevelFilter;
 
 use crate::audio::SampleFormat;
+
+#[derive(ValueEnum, Clone, Copy)]
+pub enum LogLevel {
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
 
 #[derive(Parser)]
 pub struct Args {
@@ -19,6 +29,9 @@ pub struct Args {
         help = "Number of channels to capture"
     )]
     pub channels: u8,
+
+    #[arg(short, long, default_value = "info")]
+    log_level: LogLevel,
 }
 
 impl Args {
@@ -28,10 +41,22 @@ impl Args {
         };
         self.file_name.clone()
     }
+
+    pub fn log_level(&self) -> LevelFilter {
+        match self.log_level {
+            LogLevel::Error => LevelFilter::Error,
+            LogLevel::Warn => LevelFilter::Warn,
+            LogLevel::Info => LevelFilter::Info,
+            LogLevel::Debug => LevelFilter::Debug,
+            LogLevel::Trace => LevelFilter::Trace,
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use log::Level;
+
     use super::*;
 
     #[test]
@@ -41,6 +66,7 @@ mod tests {
             format: SampleFormat::Int16,
             sample_rate: 44100,
             channels: 2,
+            log_level: LogLevel::Info,
         };
 
         assert_eq!(args.file_name(), "somefile.wav");
@@ -53,6 +79,7 @@ mod tests {
             format: SampleFormat::Int16,
             sample_rate: 44100,
             channels: 2,
+            log_level: LogLevel::Info,
         };
 
         assert_eq!(args.file_name(), "somefile.wav");
@@ -65,6 +92,7 @@ mod tests {
             format: SampleFormat::Int16,
             sample_rate: 44100,
             channels: 2,
+            log_level: LogLevel::Info,
         };
 
         let args_2 = Args {
@@ -72,8 +100,58 @@ mod tests {
             format: SampleFormat::Int16,
             sample_rate: 44100,
             channels: 2,
+            log_level: LogLevel::Info,
         };
 
         assert_eq!(args_1.file_name(), args_2.file_name());
+    }
+
+    #[test]
+    fn test_log_level_returns_correct_level_filter() {
+        let error_level_args = Args {
+            file_name: String::from("somefile"),
+            format: SampleFormat::Int16,
+            sample_rate: 44100,
+            channels: 2,
+            log_level: LogLevel::Error,
+        };
+
+        let warn_level_args = Args {
+            file_name: String::from("somefile"),
+            format: SampleFormat::Int16,
+            sample_rate: 44100,
+            channels: 2,
+            log_level: LogLevel::Warn,
+        };
+
+        let info_level_args = Args {
+            file_name: String::from("somefile"),
+            format: SampleFormat::Int16,
+            sample_rate: 44100,
+            channels: 2,
+            log_level: LogLevel::Info,
+        };
+
+        let debug_level_args = Args {
+            file_name: String::from("somefile"),
+            format: SampleFormat::Int16,
+            sample_rate: 44100,
+            channels: 2,
+            log_level: LogLevel::Debug,
+        };
+
+        let trace_level_args = Args {
+            file_name: String::from("somefile"),
+            format: SampleFormat::Int16,
+            sample_rate: 44100,
+            channels: 2,
+            log_level: LogLevel::Trace,
+        };
+
+        assert_eq!(error_level_args.log_level(), LevelFilter::Error);
+        assert_eq!(warn_level_args.log_level(), LevelFilter::Warn);
+        assert_eq!(info_level_args.log_level(), LevelFilter::Info);
+        assert_eq!(debug_level_args.log_level(), LevelFilter::Debug);
+        assert_eq!(trace_level_args.log_level(), LevelFilter::Trace);
     }
 }

@@ -2,6 +2,7 @@ use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use std::{collections::VecDeque, error::Error, fmt::Display};
 
+use log::{debug, error};
 use wasapi::{AudioClient, Device, Direction, SampleType, ShareMode, WaveFormat};
 
 use crate::{Nothing, Res};
@@ -73,6 +74,7 @@ impl AudioLoopback for WasapiLoopbackRecorder {
     }
 
     fn init(&self) -> Nothing {
+        debug!("Initializing WASAPI");
         match wasapi::initialize_mta().ok() {
             Ok(_) => Ok(()),
             Err(_) => Err(Box::new(WasapiError::InitMtaFailure)),
@@ -80,6 +82,7 @@ impl AudioLoopback for WasapiLoopbackRecorder {
     }
 
     fn capture(&self, transmitter: Sender<Vec<u8>>) -> Nothing {
+        debug!("Preparing WASAPI loopback capture");
         let rendering_device = self.get_rendering_device()?;
         let client: AudioClient = self.get_audio_client(&rendering_device)?;
 
@@ -105,6 +108,7 @@ impl AudioLoopback for WasapiLoopbackRecorder {
 
             capture_client.read_from_device_to_deque(&mut sample_queue)?;
             if event_handle.wait_for_event(TIMEOUT).is_err() {
+                error!("WASAPI timed out waiting for next audio event");
                 client.stop_stream()?;
                 break;
             }

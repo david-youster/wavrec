@@ -4,6 +4,7 @@ mod wave;
 
 use audio::{sys::LoopbackRecorder, AudioFormatInfo, AudioLoopback};
 use cli::Args;
+use log::{debug, info};
 use std::{
     error::Error,
     sync::{
@@ -27,6 +28,9 @@ pub fn run(args: Args) -> Nothing {
         num_channels: args.channels,
         format: args.format,
     });
+
+    info!("Requested audio format: {audio_format}");
+
     setup_terminate_handler(Arc::clone(&is_running));
     run_audio_thread(audio_transmitter, Arc::clone(&audio_format));
     run_processing_loop(&args.file_name(), audio_receiver, audio_format, is_running)?;
@@ -47,6 +51,7 @@ fn setup_terminate_handler(is_running_flag: Arc<AtomicBool>) {
 
 /// Initializes the audio thread.
 fn run_audio_thread(transmitter: Sender<Vec<u8>>, format: Arc<AudioFormatInfo>) {
+    info!("Starting audio thread");
     thread::spawn(move || {
         let loopback_stream = LoopbackRecorder::new(Arc::clone(&format));
         loopback_stream.init().unwrap();
@@ -60,6 +65,7 @@ fn run_processing_loop(
     format: Arc<AudioFormatInfo>,
     is_running: Arc<AtomicBool>,
 ) -> Nothing {
+    info!("Starting processing loop");
     // Handle the captured data sent from the audio thread
     let mut file_writer = WaveWriter::open(file_name, format)?;
     while is_running.load(Ordering::Relaxed) {
