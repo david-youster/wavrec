@@ -22,12 +22,22 @@ pub struct Args {
     /// Sample format to write. Supports signed integer and float audio of various bit depths.
     /// This value will be requested from the audio device, and will determine the format of the
     /// output WAV file.
-    #[arg(short, long, default_value = "int16")]
+    #[arg(
+        short,
+        long,
+        default_value = "int16",
+        help = "Sample format to use (float/int and bit depth)"
+    )]
     pub format: SampleFormat,
 
     /// The sample rate. This will be requested from the audio device stream, and will determine
     /// the format of the output file.
-    #[arg(short, long, default_value_t = 44100)]
+    #[arg(
+        short,
+        long,
+        default_value_t = 44100,
+        help = "Sample rate to request from audio device and write to file"
+    )]
     pub sample_rate: u32,
 
     /// Number of audio channels. This will be requested from the audio device stream, and will
@@ -42,7 +52,7 @@ pub struct Args {
 
     /// The log level. `Off` to disable, `Trace` is the most  granular.
     /// Corresponds to [`log::LevelFilter`] values.
-    #[arg(short, long, default_value = "info")]
+    #[arg(short, long, default_value = "info", help = "The logging level to use")]
     log_level: LogLevel,
 }
 
