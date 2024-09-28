@@ -14,8 +14,6 @@ use crate::{audio::AudioFormatInfo, Nothing, Res};
 type TwoByteField = [u8; 2];
 type FourByteField = [u8; 4];
 
-const BYTES_IN_HEADER: usize = 44;
-
 /// Represents the content of the header section of the WAVE file format.
 /// Some resources describing the file format (last accessed 16/09/24):
 /// - http://www.ringthis.com/dev/wave_format.htm
@@ -44,10 +42,13 @@ struct WaveHeader {
 }
 
 impl WaveHeader {
+    const BYTES_IN_HEADER: usize = 44;
+
     fn create(format: &AudioFormatInfo, data_size: usize) -> Res<WaveHeader> {
         trace!("Preparing WAV header data");
         let file_description_header = b"RIFF".to_owned();
-        let file_size: FourByteField = ((data_size + (BYTES_IN_HEADER - 8)) as u32).to_le_bytes();
+        let file_size: FourByteField =
+            ((data_size + (Self::BYTES_IN_HEADER - 8)) as u32).to_le_bytes();
         let wave_description_header = b"WAVE".to_owned();
         let fmt_description = b"fmt ".to_owned();
         let wave_description_chunk_size = 16u32.to_le_bytes().to_owned();
@@ -75,7 +76,7 @@ impl WaveHeader {
 
     /// Build the formatted WAV file header, ready for writing
     fn as_bytes(&self) -> Vec<u8> {
-        let mut data: Vec<u8> = Vec::with_capacity(BYTES_IN_HEADER);
+        let mut data: Vec<u8> = Vec::with_capacity(Self::BYTES_IN_HEADER);
         data.extend_from_slice(&self.file_description_header);
         data.extend_from_slice(&self.file_size);
         data.extend_from_slice(&self.wave_description_header);
@@ -359,7 +360,9 @@ mod tests {
         let header = create_wave_header(sample_rate, format, num_channels, data_size);
         assert_eq!(
             u32::from_le_bytes(header.file_size),
-            (data_size + BYTES_IN_HEADER - 8).try_into().unwrap()
+            (data_size + WaveHeader::BYTES_IN_HEADER - 8)
+                .try_into()
+                .unwrap()
         );
 
         assert_eq!(
@@ -394,7 +397,7 @@ mod tests {
 
         assert_eq!(
             header[4..8],
-            ((data_size + BYTES_IN_HEADER - 8) as u32).to_le_bytes()
+            ((data_size + WaveHeader::BYTES_IN_HEADER - 8) as u32).to_le_bytes()
         );
 
         assert_eq!(header[20..22], format.type_format_header().to_le_bytes());
