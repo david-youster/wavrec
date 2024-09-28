@@ -5,6 +5,7 @@ use crate::audio::SampleFormat;
 
 #[derive(ValueEnum, Clone, Copy)]
 pub enum LogLevel {
+    Off,
     Error,
     Warn,
     Info,
@@ -44,6 +45,7 @@ impl Args {
 
     pub fn log_level(&self) -> LevelFilter {
         match self.log_level {
+            LogLevel::Off => LevelFilter::Off,
             LogLevel::Error => LevelFilter::Error,
             LogLevel::Warn => LevelFilter::Warn,
             LogLevel::Info => LevelFilter::Info,
