@@ -9,6 +9,7 @@ use crate::Nothing;
 
 pub mod sys;
 
+/// Audio bit depth and sample format.
 #[derive(ValueEnum, Clone, Copy)]
 pub enum SampleFormat {
     Int16,
@@ -18,6 +19,7 @@ pub enum SampleFormat {
 }
 
 impl SampleFormat {
+    /// Return the appropriaate bit depth for the selected sample format.
     pub fn bit_depth(&self) -> u8 {
         match self {
             SampleFormat::Int16 => 16,
@@ -27,6 +29,7 @@ impl SampleFormat {
         }
     }
 
+    /// Gives the type format header for the selected audio format. `1` for PCM, `3` for float.
     pub fn type_format_header(&self) -> u16 {
         match self {
             SampleFormat::Int16 | SampleFormat::Int24 | SampleFormat::Int32 => 1u16,
@@ -35,6 +38,7 @@ impl SampleFormat {
     }
 }
 
+/// Basic info about the audio format to capture and write.
 pub struct AudioFormatInfo {
     pub sample_rate: u32,
     pub num_channels: u8,
@@ -90,8 +94,13 @@ impl Display for AudioFormatInfo {
 }
 
 pub trait AudioLoopback {
+    /// Create a new instance of the AudioLoopback system.
     fn new(format: Arc<AudioFormatInfo>) -> Self;
+
+    /// Initialize the audio system.
     fn init(&self) -> Nothing;
+
+    /// Start the audio capture loop. Audio will be written to the [`transmitter`](std::sync::mpsc::Sender).
     fn capture(&self, transmitter: Sender<Vec<u8>>) -> Nothing;
 }
 

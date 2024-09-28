@@ -16,34 +16,50 @@ type FourByteField = [u8; 4];
 
 /// Represents the content of the header section of the WAVE file format.
 /// Some resources describing the file format (last accessed 16/09/24):
-/// - http://www.ringthis.com/dev/wave_format.htm
-/// - http://soundfile.sapp.org/doc/WaveFormat/
+/// - <http://www.ringthis.com/dev/wave_format.htm>
+/// - <http://soundfile.sapp.org/doc/WaveFormat>
 struct WaveHeader {
+    /// This will always be the value `RIFF`.
     file_description_header: FourByteField,
 
-    // File size less the 4 bytes of the RIFF marker, and the 4 bytes of this field
+    // File size less the 4 bytes of the RIFF marker, and the 4 bytes of this field.
     file_size: FourByteField,
 
+    /// This will always be the value `WAVE`.
     wave_description_header: FourByteField,
+
+    /// This will always be the value `fmt `. Note the space at the end.
     fmt_description: FourByteField,
 
-    // This is the size in bytes of the type format, channels, sample rate, bytes per second, block
-    // alignment and bit depth sections.
+    /// This is the size in bytes of the type format, channels, sample rate, bytes per second, block
+    /// alignment and bit depth sections.
     wave_description_chunk_size: FourByteField,
 
-    // PCM audio = 1 / Floating point audio = 3
+    /// For PCM (integer audio), use `1`. For floating point audio, use `3`.
     type_format: TwoByteField,
 
+    /// Number of audio channels. Channel audio will be interleaved.
     num_channels: TwoByteField,
+
+    /// The sample rate.
     sample_rate: FourByteField,
+
+    /// Number of bytes per second in the audio.
+    /// `(Sample rate * bit depth) / 8`
     bytes_per_second: FourByteField,
+
+    /// Number of bytes per audio frame.
+    /// `Number of channels * bit depth / 8`
     block_alignment: TwoByteField,
+
+    /// Audio bit depth.
     bit_depth: TwoByteField,
 }
 
 impl WaveHeader {
     const BYTES_IN_HEADER: usize = 44;
 
+    /// Create a new [`WaveHeader`] based on the given [`AudioFormatInfo`] and data size.
     fn create(format: &AudioFormatInfo, data_size: usize) -> Res<WaveHeader> {
         trace!("Preparing WAV header data");
         let file_description_header = b"RIFF".to_owned();
@@ -74,7 +90,7 @@ impl WaveHeader {
         })
     }
 
-    /// Build the formatted WAV file header, ready for writing
+    /// Build the formatted WAV file header, ready for writing.
     fn as_bytes(&self) -> Vec<u8> {
         let mut data: Vec<u8> = Vec::with_capacity(Self::BYTES_IN_HEADER);
         data.extend_from_slice(&self.file_description_header);
@@ -92,7 +108,7 @@ impl WaveHeader {
     }
 }
 
-/// Represents the data section of a WAV file, including the 'data' header
+/// Represents the data section of a WAV file, including the 'data' header.
 struct WaveData {
     data_header: FourByteField,
     size_in_bytes: FourByteField,
@@ -100,6 +116,7 @@ struct WaveData {
 }
 
 impl WaveData {
+    /// Create the data section of the WAV file.
     fn create(data: Vec<u8>) -> Res<WaveData> {
         trace!("Preparing WAV data section");
         let data_header = b"data".to_owned();
@@ -110,7 +127,7 @@ impl WaveData {
             data,
         })
     }
-    /// Return the formatted bytes in the data section, ready for writing
+    /// Return the formatted bytes in the data section, ready for writing.
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut data = Vec::with_capacity(8 + self.data.len());
         data.extend_from_slice(&self.data_header);
@@ -128,7 +145,7 @@ pub struct WaveFile {
 }
 
 impl WaveFile {
-    /// Prepare the data for a new WAV file
+    /// Prepare the data for a new WAV file.
     pub fn create(data: Vec<u8>, format: Arc<AudioFormatInfo>) -> Res<Self> {
         debug!("Preparing WAV file data");
         let header = WaveHeader::create(format.as_ref(), data.len())?;
@@ -136,7 +153,7 @@ impl WaveFile {
         Ok(WaveFile { header, data })
     }
 
-    /// Write the WAV data to file
+    /// Write the WAV data to file.
     pub fn write(&self, file_name: &str) -> Nothing {
         debug!("Writing to file: {file_name}");
         let header_bytes = self.header.as_bytes();
@@ -204,7 +221,7 @@ impl WaveWriter {
 }
 
 impl Drop for WaveWriter {
-    /// Clean up the temporary file used by the [BufWriter]
+    /// Clean up the temporary file used by the [BufWriter].
     fn drop(&mut self) {
         self.buffered_writer.flush().unwrap();
 

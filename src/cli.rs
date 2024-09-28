@@ -13,16 +13,25 @@ pub enum LogLevel {
     Trace,
 }
 
+/// Command line arguments, courtesty of [`clap`]. Implements [`clap::Parser`].
 #[derive(Parser)]
 pub struct Args {
+    /// The file name to write to. Extension `.wav` will be appended if not specified.
     file_name: String,
 
+    /// Sample format to write. Supports signed integer and float audio of various bit depths.
+    /// This value will be requested from the audio device, and will determine the format of the
+    /// output WAV file.
     #[arg(short, long, default_value = "int16")]
     pub format: SampleFormat,
 
+    /// The sample rate. This will be requested from the audio device stream, and will determine
+    /// the format of the output file.
     #[arg(short, long, default_value_t = 44100)]
     pub sample_rate: u32,
 
+    /// Number of audio channels. This will be requested from the audio device stream, and will
+    /// determine the format of the output WAV.
     #[arg(
         short,
         long,
@@ -31,11 +40,14 @@ pub struct Args {
     )]
     pub channels: u8,
 
+    /// The log level. `Off` to disable, `Trace` is the most  granular.
+    /// Corresponds to [`log::LevelFilter`] values.
     #[arg(short, long, default_value = "info")]
     log_level: LogLevel,
 }
 
 impl Args {
+    /// Get the file name to write to. If file name is missing extension, it will be appended here.
     pub fn file_name(&self) -> String {
         if !self.file_name.ends_with(".wav") {
             return format!("{}.wav", &self.file_name[..]);
@@ -43,6 +55,7 @@ impl Args {
         self.file_name.clone()
     }
 
+    /// Map the log level config property to a [`log::LevelFilter`] value.
     pub fn log_level(&self) -> LevelFilter {
         match self.log_level {
             LogLevel::Off => LevelFilter::Off,

@@ -19,6 +19,16 @@ use wave::WaveWriter;
 type Res<T> = Result<T, Box<dyn Error>>;
 type Nothing = Res<()>;
 
+/// Run the application.
+///
+/// This will spawn a thread which will pull data from the default audio device and write it to a
+/// WAV file. See the [`cli::Args`] struct for options.
+///
+/// The application will only capture data while there is audio playing. When the audio device is
+/// not in use, nothing will be captured.
+///
+/// # Panic
+/// Panics if either the audio thread or audio processing loop fails
 pub fn run(args: Args) -> Nothing {
     let is_running = Arc::new(AtomicBool::new(true));
     let (audio_transmitter, audio_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = mpsc::channel();
@@ -38,9 +48,9 @@ pub fn run(args: Args) -> Nothing {
     Ok(())
 }
 
-/// Initializes the Ctrl-C handler
+/// Initializes the Ctrl-C handler.
 ///
-/// # Panics
+/// # Panic
 /// Panics if the [`ctrlc`] crate fails to set the handler
 fn setup_terminate_handler(is_running_flag: Arc<AtomicBool>) {
     ctrlc::set_handler(move || {
@@ -51,6 +61,12 @@ fn setup_terminate_handler(is_running_flag: Arc<AtomicBool>) {
 }
 
 /// Initializes the audio thread.
+///
+/// This thread will run in the background, and continuously send data to the provided
+/// [`transmitter`](std::sync::mpsc::Sender), when the audio device is in use.
+///
+/// # Panic
+/// Panics if the [`LoopbackRecorder`] fails for some reason.
 fn run_audio_thread(transmitter: Sender<Vec<u8>>, format: Arc<AudioFormatInfo>) {
     info!("Starting audio thread");
     thread::spawn(move || {
@@ -60,6 +76,12 @@ fn run_audio_thread(transmitter: Sender<Vec<u8>>, format: Arc<AudioFormatInfo>) 
     });
 }
 
+/// Handles the audio data received from the audio thread.
+///
+/// Audio data received will be writted to the WAV file requested in the [CLI args](cli::Args).
+///
+/// # Panic
+/// Panics if the [`WaveWriter`] data [`write`](wave::WaveWriter::write) fails for some reason.
 fn run_processing_loop(
     file_name: &str,
     receiver: Receiver<Vec<u8>>,

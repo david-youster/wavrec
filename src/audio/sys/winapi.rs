@@ -27,16 +27,22 @@ impl Display for WasapiError {
     }
 }
 
+/// Loopback recorder for Windows.
 pub struct WasapiLoopbackRecorder {
     format: WaveFormat,
+
+    /// Numer of audio blocks to send to the [`transmitter`](std::sync::mpsc::Sender) in a single
+    /// write.
     chunk_size: usize,
 }
 
 impl WasapiLoopbackRecorder {
+    /// Get the WASAPI rendering device.
     fn get_rendering_device(&self) -> Res<Device> {
         wasapi::get_default_device(&Direction::Render)
     }
 
+    /// Build and initialise the WASAPI [`AudioClient`]
     fn get_audio_client(&self, device: &Device) -> Res<AudioClient> {
         let mut client = device.get_iaudioclient()?;
         let (_, min_time) = client.get_periods()?;
@@ -52,6 +58,7 @@ impl WasapiLoopbackRecorder {
 }
 
 impl AudioLoopback for WasapiLoopbackRecorder {
+    /// Create a new WASAPI-based [`AudioLoopback`] recorder.
     fn new(format: Arc<AudioFormatInfo>) -> WasapiLoopbackRecorder {
         let bit_depth = format.format.bit_depth() as usize;
         let sample_rate = format.sample_rate as usize;
@@ -73,6 +80,7 @@ impl AudioLoopback for WasapiLoopbackRecorder {
         WasapiLoopbackRecorder { format, chunk_size }
     }
 
+    /// Initialize the WASAPI system.
     fn init(&self) -> Nothing {
         debug!("Initializing WASAPI");
         match wasapi::initialize_mta().ok() {
@@ -81,6 +89,7 @@ impl AudioLoopback for WasapiLoopbackRecorder {
         }
     }
 
+    /// Capture audio from the loopback stream.
     fn capture(&self, transmitter: Sender<Vec<u8>>) -> Nothing {
         debug!("Preparing WASAPI loopback capture");
         let rendering_device = self.get_rendering_device()?;
