@@ -160,7 +160,7 @@ pub struct WaveWriter {
 
 impl WaveWriter {
     /// Prepares a new WaveWriter for writing audio data to disk.
-    /// This uses a temporary file as a data buffer, which can later be written to an correctly
+    /// This uses a temporary file as a data buffer, which can later be written to a correctly
     /// formatted WAV file.
     pub fn open(file_name: &str, audio_format_info: Arc<AudioFormatInfo>) -> Res<Self> {
         let mut tmp_dir = env::temp_dir();
