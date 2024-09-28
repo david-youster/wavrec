@@ -6,6 +6,7 @@ use std::{
     sync::Arc,
 };
 
+use log::{debug, trace};
 use uuid::Uuid;
 
 use crate::{audio::AudioFormatInfo, Nothing, Res};
@@ -44,6 +45,7 @@ struct WaveHeader {
 
 impl WaveHeader {
     fn create(format: &AudioFormatInfo, data_size: usize) -> Res<WaveHeader> {
+        trace!("Preparing WAV header data");
         let file_description_header = b"RIFF".to_owned();
         let file_size: FourByteField = ((data_size + (BYTES_IN_HEADER - 8)) as u32).to_le_bytes();
         let wave_description_header = b"WAVE".to_owned();
@@ -98,6 +100,7 @@ struct WaveData {
 
 impl WaveData {
     fn create(data: Vec<u8>) -> Res<WaveData> {
+        trace!("Preparing WAV data section");
         let data_header = b"data".to_owned();
         let size_in_bytes: FourByteField = (data.len() as u32).to_le_bytes().to_owned();
         Ok(WaveData {
@@ -126,6 +129,7 @@ pub struct WaveFile {
 impl WaveFile {
     /// Prepare the data for a new WAV file
     pub fn create(data: Vec<u8>, format: Arc<AudioFormatInfo>) -> Res<Self> {
+        debug!("Preparing WAV file data");
         let header = WaveHeader::create(format.as_ref(), data.len())?;
         let data = WaveData::create(data)?;
         Ok(WaveFile { header, data })
@@ -133,6 +137,7 @@ impl WaveFile {
 
     /// Write the WAV data to file
     pub fn write(&self, file_name: &str) -> Nothing {
+        debug!("Writing to file: {file_name}");
         let header_bytes = self.header.as_bytes();
         let data_bytes = self.data.as_bytes();
         let mut file = File::create(file_name)?;
@@ -162,6 +167,8 @@ impl WaveWriter {
         let tmp_file_name = format!("wavdata-{}", tmp_file_id);
         tmp_dir.push(&tmp_file_name);
 
+        trace!("Creating temporary file: {tmp_file_name}");
+
         let file = File::create(&tmp_dir)?;
         let buffered_writer = BufWriter::new(file);
         let bytes_written = 0;
@@ -184,6 +191,7 @@ impl WaveWriter {
 
     /// Commit the written audio data to disk
     pub fn commit(&mut self) -> Nothing {
+        trace!("Preparing to write from temp file to WAV file");
         self.buffered_writer.flush()?;
         let mut data = Vec::new();
         File::open(&self.tmp_file_name)?.read_to_end(&mut data)?;
@@ -199,6 +207,7 @@ impl Drop for WaveWriter {
     fn drop(&mut self) {
         self.buffered_writer.flush().unwrap();
 
+        trace!("Removing temporary file");
         if Path::new(&self.tmp_file_name).exists() {
             fs::remove_file(&self.tmp_file_name).unwrap();
         }

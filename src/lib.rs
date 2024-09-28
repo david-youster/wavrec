@@ -44,6 +44,7 @@ pub fn run(args: Args) -> Nothing {
 /// Panics if the [`ctrlc`] crate fails to set the handler
 fn setup_terminate_handler(is_running_flag: Arc<AtomicBool>) {
     ctrlc::set_handler(move || {
+        info!("Shutting down");
         is_running_flag.store(false, Ordering::Relaxed);
     })
     .expect("Unable to set Ctrl-C signal handler");
@@ -74,6 +75,7 @@ fn run_processing_loop(
             file_writer.write(chunk).unwrap();
         });
     }
+    info!("Creating file: {file_name}");
     file_writer.commit()?;
     Ok(())
 }
