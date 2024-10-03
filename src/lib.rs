@@ -2,7 +2,7 @@ mod audio;
 pub mod cli;
 mod wave;
 
-use audio::{sys::LoopbackRecorder, AudioFormatInfo, AudioLoopback};
+use audio::{sys::LoopbackRecorder, AudioFormatInfo, AudioLoopback, RequestedAudioFormatInfo};
 use cli::Args;
 use log::info;
 use std::{
@@ -33,13 +33,15 @@ pub fn run(args: Args) -> Nothing {
     let is_running = Arc::new(AtomicBool::new(true));
     let (audio_transmitter, audio_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = mpsc::channel();
 
-    let audio_format = Arc::new(AudioFormatInfo {
+    let requested_format = Arc::new(RequestedAudioFormatInfo {
         sample_rate: args.sample_rate,
         num_channels: args.channels,
         format: args.format,
     });
 
-    info!("Requested audio format: {audio_format}");
+    let loopback_stream = LoopbackRecorder::create(requested_format)
+
+    // info!("Requested audio format: {audio_format}");
 
     setup_terminate_handler(Arc::clone(&is_running));
     run_audio_thread(audio_transmitter, Arc::clone(&audio_format));
@@ -70,7 +72,7 @@ fn setup_terminate_handler(is_running_flag: Arc<AtomicBool>) {
 fn run_audio_thread(transmitter: Sender<Vec<u8>>, format: Arc<AudioFormatInfo>) {
     info!("Starting audio thread");
     thread::spawn(move || {
-        let loopback_stream = LoopbackRecorder::new(Arc::clone(&format));
+        let loopback_stream = LoopbackRecorder::create(Arc::clone(&format));
         loopback_stream.init().unwrap();
         loopback_stream.capture(transmitter).unwrap();
     });

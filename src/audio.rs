@@ -5,7 +5,7 @@ use std::{
 
 use clap::ValueEnum;
 
-use crate::Nothing;
+use crate::{Nothing, Res};
 
 pub mod sys;
 
@@ -35,6 +35,19 @@ impl SampleFormat {
             SampleFormat::Int16 | SampleFormat::Int24 | SampleFormat::Int32 => 1u16,
             SampleFormat::Float32 => 3u16,
         }
+    }
+}
+
+/// Audio format info requested by the user
+pub struct RequestedAudioFormatInfo {
+    pub sample_rate: Option<u32>,
+    pub num_channels: Option<u8>,
+    pub format: Option<SampleFormat>,
+}
+
+impl RequestedAudioFormatInfo {
+    pub fn bit_depth(&self) -> Option<u8> {
+        self.format.map(|f| f.bit_depth())
     }
 }
 
@@ -95,10 +108,7 @@ impl Display for AudioFormatInfo {
 
 pub trait AudioLoopback {
     /// Create a new instance of the AudioLoopback system.
-    fn new(format: Arc<AudioFormatInfo>) -> Self;
-
-    /// Initialize the audio system.
-    fn init(&self) -> Nothing;
+    fn create(format: RequestedAudioFormatInfo) -> Res<impl AudioLoopback>;
 
     /// Start the audio capture loop. Audio will be written to the [`transmitter`](std::sync::mpsc::Sender).
     fn capture(&self, transmitter: Sender<Vec<u8>>) -> Nothing;

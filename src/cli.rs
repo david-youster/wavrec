@@ -22,33 +22,22 @@ pub struct Args {
     /// Sample format to write. Supports signed integer and float audio of various bit depths.
     /// This value will be requested from the audio device, and will determine the format of the
     /// output WAV file.
-    #[arg(
-        short,
-        long,
-        default_value = "int16",
-        help = "Sample format to use (float/int and bit depth)"
-    )]
-    pub format: SampleFormat,
+    #[arg(short, long, help = "Sample format to use (float/int and bit depth)")]
+    pub format: Option<SampleFormat>,
 
     /// The sample rate. This will be requested from the audio device stream, and will determine
     /// the format of the output file.
     #[arg(
         short,
         long,
-        default_value_t = 44100,
         help = "Sample rate to request from audio device and write to file"
     )]
-    pub sample_rate: u32,
+    pub sample_rate: Option<u32>,
 
     /// Number of audio channels. This will be requested from the audio device stream, and will
     /// determine the format of the output WAV.
-    #[arg(
-        short,
-        long,
-        default_value_t = 2,
-        help = "Number of channels to capture"
-    )]
-    pub channels: u8,
+    #[arg(short, long, help = "Number of channels to capture")]
+    pub channels: Option<u8>,
 
     /// The log level. `Off` to disable, `Trace` is the most  granular.
     /// Corresponds to [`log::LevelFilter`] values.
@@ -87,9 +76,9 @@ mod tests {
     fn test_file_name_without_extension_is_modified() {
         let args = Args {
             file_name: String::from("somefile"),
-            format: SampleFormat::Int16,
-            sample_rate: 44100,
-            channels: 2,
+            format: None,
+            sample_rate: None,
+            channels: None,
             log_level: LogLevel::Info,
         };
 
@@ -100,9 +89,9 @@ mod tests {
     fn test_file_name_with_extension_is_unchanged() {
         let args = Args {
             file_name: String::from("somefile.wav"),
-            format: SampleFormat::Int16,
-            sample_rate: 44100,
-            channels: 2,
+            format: None,
+            sample_rate: None,
+            channels: None,
             log_level: LogLevel::Info,
         };
 
@@ -113,17 +102,17 @@ mod tests {
     fn test_including_extension_is_optional() {
         let args_1 = Args {
             file_name: String::from("somefile"),
-            format: SampleFormat::Int16,
-            sample_rate: 44100,
-            channels: 2,
+            format: None,
+            sample_rate: None,
+            channels: None,
             log_level: LogLevel::Info,
         };
 
         let args_2 = Args {
             file_name: String::from("somefile.wav"),
-            format: SampleFormat::Int16,
-            sample_rate: 44100,
-            channels: 2,
+            format: None,
+            sample_rate: None,
+            channels: None,
             log_level: LogLevel::Info,
         };
 
@@ -134,41 +123,41 @@ mod tests {
     fn test_log_level_returns_correct_level_filter() {
         let error_level_args = Args {
             file_name: String::from("somefile"),
-            format: SampleFormat::Int16,
-            sample_rate: 44100,
-            channels: 2,
+            format: None,
+            sample_rate: None,
+            channels: None,
             log_level: LogLevel::Error,
         };
 
         let warn_level_args = Args {
             file_name: String::from("somefile"),
-            format: SampleFormat::Int16,
-            sample_rate: 44100,
-            channels: 2,
+            format: None,
+            sample_rate: None,
+            channels: None,
             log_level: LogLevel::Warn,
         };
 
         let info_level_args = Args {
             file_name: String::from("somefile"),
-            format: SampleFormat::Int16,
-            sample_rate: 44100,
-            channels: 2,
+            format: None,
+            sample_rate: None,
+            channels: None,
             log_level: LogLevel::Info,
         };
 
         let debug_level_args = Args {
             file_name: String::from("somefile"),
-            format: SampleFormat::Int16,
-            sample_rate: 44100,
-            channels: 2,
+            format: None,
+            sample_rate: None,
+            channels: None,
             log_level: LogLevel::Debug,
         };
 
         let trace_level_args = Args {
             file_name: String::from("somefile"),
-            format: SampleFormat::Int16,
-            sample_rate: 44100,
-            channels: 2,
+            format: None,
+            sample_rate: None,
+            channels: None,
             log_level: LogLevel::Trace,
         };
 
