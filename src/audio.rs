@@ -52,6 +52,7 @@ impl RequestedAudioFormatInfo {
 }
 
 /// Basic info about the audio format to capture and write.
+#[derive(Copy, Clone)]
 pub struct AudioFormatInfo {
     pub sample_rate: u32,
     pub num_channels: u8,
@@ -106,9 +107,17 @@ impl Display for AudioFormatInfo {
     }
 }
 
-pub trait AudioLoopback {
-    /// Create a new instance of the AudioLoopback system.
-    fn create(format: RequestedAudioFormatInfo) -> Res<impl AudioLoopback>;
+pub trait AudioLoopback: Send + Sync {
+    /// Create a new instance of the `AudioLoopback` system.
+    fn create(format: RequestedAudioFormatInfo) -> Res<impl AudioLoopback>
+    where
+        Self: Sized;
+
+    /// Return an [`AudioFormatInfo`] struct with the format info that the loopback recorder has
+    /// been configured to use. This will be initialized from the [`RequestedAudioFormatInfo`]
+    /// passed to the [`AudioLoopback::create`] method, with missing values being set to the
+    /// default for the audio system.
+    fn get_audio_format(&self) -> AudioFormatInfo;
 
     /// Start the audio capture loop. Audio will be written to the [`transmitter`](std::sync::mpsc::Sender).
     fn capture(&self, transmitter: Sender<Vec<u8>>) -> Nothing;

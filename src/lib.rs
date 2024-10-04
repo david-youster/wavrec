@@ -33,18 +33,19 @@ pub fn run(args: Args) -> Nothing {
     let is_running = Arc::new(AtomicBool::new(true));
     let (audio_transmitter, audio_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = mpsc::channel();
 
-    let requested_format = Arc::new(RequestedAudioFormatInfo {
+    let requested_format = RequestedAudioFormatInfo {
         sample_rate: args.sample_rate,
         num_channels: args.channels,
         format: args.format,
-    });
+    };
 
-    let loopback_stream = LoopbackRecorder::create(requested_format)
-
-    // info!("Requested audio format: {audio_format}");
+    let loopback_stream: Arc<dyn AudioLoopback> =
+        Arc::new(LoopbackRecorder::create(requested_format)?);
+    let audio_format = loopback_stream.get_audio_format();
+    info!("Loopback recorder initialized with format: {audio_format}");
 
     setup_terminate_handler(Arc::clone(&is_running));
-    run_audio_thread(audio_transmitter, Arc::clone(&audio_format));
+    run_audio_thread(audio_transmitter, Arc::clone(&loopback_stream));
     run_processing_loop(&args.file_name(), audio_receiver, audio_format, is_running)?;
 
     Ok(())
@@ -69,11 +70,9 @@ fn setup_terminate_handler(is_running_flag: Arc<AtomicBool>) {
 ///
 /// # Panic
 /// Panics if the [`LoopbackRecorder`] fails for some reason.
-fn run_audio_thread(transmitter: Sender<Vec<u8>>, format: Arc<AudioFormatInfo>) {
+fn run_audio_thread(transmitter: Sender<Vec<u8>>, loopback_stream: Arc<dyn AudioLoopback>) {
     info!("Starting audio thread");
     thread::spawn(move || {
-        let loopback_stream = LoopbackRecorder::create(Arc::clone(&format));
-        loopback_stream.init().unwrap();
         loopback_stream.capture(transmitter).unwrap();
     });
 }
@@ -87,7 +86,7 @@ fn run_audio_thread(transmitter: Sender<Vec<u8>>, format: Arc<AudioFormatInfo>) 
 fn run_processing_loop(
     file_name: &str,
     receiver: Receiver<Vec<u8>>,
-    format: Arc<AudioFormatInfo>,
+    format: AudioFormatInfo,
     is_running: Arc<AtomicBool>,
 ) -> Nothing {
     info!("Starting processing loop");

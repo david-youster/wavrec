@@ -44,6 +44,9 @@ pub struct WasapiLoopbackRecorder {
     client: AudioClient,
 }
 
+unsafe impl Send for WasapiLoopbackRecorder {}
+unsafe impl Sync for WasapiLoopbackRecorder {}
+
 impl AudioLoopback for WasapiLoopbackRecorder {
     /// Create a new WASAPI-based [`AudioLoopback`] recorder.
     #[allow(refining_impl_trait)]
@@ -120,6 +123,10 @@ impl AudioLoopback for WasapiLoopbackRecorder {
             chunk_size,
             client,
         })
+    }
+
+    fn get_audio_format(&self) -> AudioFormatInfo {
+        self.audio_format
     }
 
     /// Capture audio from the loopback stream.

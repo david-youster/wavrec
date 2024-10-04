@@ -3,7 +3,6 @@ use std::{
     fs::{self, File},
     io::{BufWriter, Read, Write},
     path::Path,
-    sync::Arc,
 };
 
 use log::{debug, trace};
@@ -60,7 +59,7 @@ impl WaveHeader {
     const BYTES_IN_HEADER: usize = 44;
 
     /// Create a new [`WaveHeader`] based on the given [`AudioFormatInfo`] and data size.
-    fn create(format: &AudioFormatInfo, data_size: usize) -> Res<WaveHeader> {
+    fn create(format: AudioFormatInfo, data_size: usize) -> Res<WaveHeader> {
         trace!("Preparing WAV header data");
         let file_description_header = b"RIFF".to_owned();
         let file_size: FourByteField =
@@ -146,9 +145,9 @@ pub struct WaveFile {
 
 impl WaveFile {
     /// Prepare the data for a new WAV file.
-    pub fn create(data: Vec<u8>, format: Arc<AudioFormatInfo>) -> Res<Self> {
+    pub fn create(data: Vec<u8>, format: AudioFormatInfo) -> Res<Self> {
         debug!("Preparing WAV file data");
-        let header = WaveHeader::create(format.as_ref(), data.len())?;
+        let header = WaveHeader::create(format, data.len())?;
         let data = WaveData::create(data)?;
         Ok(WaveFile { header, data })
     }
@@ -172,14 +171,14 @@ pub struct WaveWriter {
     file_name: String,
     tmp_file_name: String,
     bytes_written: usize,
-    audio_format_info: Arc<AudioFormatInfo>,
+    audio_format_info: AudioFormatInfo,
 }
 
 impl WaveWriter {
     /// Prepares a new WaveWriter for writing audio data to disk.
     /// This uses a temporary file as a data buffer, which can later be written to a correctly
     /// formatted WAV file.
-    pub fn open(file_name: &str, audio_format_info: Arc<AudioFormatInfo>) -> Res<Self> {
+    pub fn open(file_name: &str, audio_format_info: AudioFormatInfo) -> Res<Self> {
         let mut tmp_dir = env::temp_dir();
         let tmp_file_id = Uuid::new_v4().to_string();
         let tmp_file_name = format!("wavdata-{}", tmp_file_id);
@@ -214,7 +213,7 @@ impl WaveWriter {
         let mut data = Vec::new();
         File::open(&self.tmp_file_name)?.read_to_end(&mut data)?;
 
-        let wav = WaveFile::create(data, Arc::clone(&self.audio_format_info))?;
+        let wav = WaveFile::create(data, self.audio_format_info)?;
         wav.write(&self.file_name)?;
         Ok(())
     }
@@ -365,7 +364,7 @@ mod tests {
             num_channels,
             format,
         };
-        WaveHeader::create(&format, data_size).unwrap()
+        WaveHeader::create(format, data_size).unwrap()
     }
 
     fn validate_wave_header_fields(
