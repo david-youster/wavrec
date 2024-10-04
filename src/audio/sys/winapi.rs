@@ -1,10 +1,8 @@
-use std::borrow::Borrow;
 use std::sync::mpsc::Sender;
-use std::sync::Arc;
 use std::{collections::VecDeque, error::Error, fmt::Display};
 
 use log::{debug, error};
-use wasapi::{AudioClient, Device, Direction, SampleType, ShareMode, WaveFormat};
+use wasapi::{AudioClient, Direction, SampleType, ShareMode, WaveFormat};
 
 use crate::{Nothing, Res};
 
@@ -52,7 +50,7 @@ impl AudioLoopback for WasapiLoopbackRecorder {
     #[allow(refining_impl_trait)]
     fn create(format: RequestedAudioFormatInfo) -> Res<WasapiLoopbackRecorder> {
         debug!("Initializing WASAPI");
-        if let Err(_) = wasapi::initialize_mta().ok() {
+        if wasapi::initialize_mta().ok().is_err() {
             return Err(Box::new(WasapiError::InitMtaFailure));
         };
 
@@ -62,19 +60,13 @@ impl AudioLoopback for WasapiLoopbackRecorder {
         let default_format = client.get_mixformat()?;
         let bit_depth = format
             .bit_depth()
-            .map(|b| b as u8)
-            .or(Some(default_format.get_bitspersample() as u8))
-            .unwrap();
+            .unwrap_or(default_format.get_bitspersample() as u8);
         let sample_rate = format
             .sample_rate
-            .map(|s| s as u32)
-            .or(Some(default_format.get_samplespersec()))
-            .unwrap();
+            .unwrap_or(default_format.get_samplespersec());
         let num_channels = format
             .num_channels
-            .map(|c| c as u8)
-            .or(Some(default_format.get_nchannels() as u8))
-            .unwrap();
+            .unwrap_or(default_format.get_nchannels() as u8);
 
         let sample_type = match format.format {
             Some(SampleFormat::Int16) | Some(SampleFormat::Int24) | Some(SampleFormat::Int32) => {

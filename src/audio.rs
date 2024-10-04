@@ -1,6 +1,6 @@
 use std::{
     fmt::Display,
-    sync::{mpsc::Sender, Arc},
+    sync::mpsc::Sender,
 };
 
 use clap::ValueEnum;
