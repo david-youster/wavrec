@@ -217,15 +217,14 @@ impl WaveWriter {
         wav.write(&self.file_name)?;
         Ok(())
     }
-}
 
-impl Drop for WaveWriter {
-    /// Clean up the temporary file used by the [BufWriter].
-    fn drop(&mut self) {
+    /// Clean up the temporary file used by the [`BufWriter`].
+    pub fn close(self) -> Nothing {
         trace!("Removing temporary file");
         if Path::new(&self.tmp_file_name).exists() {
-            fs::remove_file(&self.tmp_file_name).unwrap();
+            fs::remove_file(&self.tmp_file_name)?;
         }
+        Ok(())
     }
 }
 

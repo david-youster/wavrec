@@ -100,5 +100,6 @@ fn run_processing_loop(
     }
     info!("Creating file: {file_name}");
     file_writer.commit()?;
+    file_writer.close()?;
     Ok(())
 }
