@@ -121,6 +121,14 @@ mod tests {
 
     #[test]
     fn test_log_level_returns_correct_level_filter() {
+        let off_level_args = Args {
+            file_name: String::from("somefile"),
+            format: None,
+            sample_rate: None,
+            channels: None,
+            log_level: LogLevel::Off,
+        };
+
         let error_level_args = Args {
             file_name: String::from("somefile"),
             format: None,
@@ -161,6 +169,7 @@ mod tests {
             log_level: LogLevel::Trace,
         };
 
+        assert_eq!(off_level_args.log_level(), LevelFilter::Off);
         assert_eq!(error_level_args.log_level(), LevelFilter::Error);
         assert_eq!(warn_level_args.log_level(), LevelFilter::Warn);
         assert_eq!(info_level_args.log_level(), LevelFilter::Info);
