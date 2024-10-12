@@ -89,7 +89,7 @@ fn run_audio_thread(transmitter: Sender<Vec<u8>>, loopback_stream: Arc<dyn Audio
 
 /// Handles the audio data received from the audio thread.
 ///
-/// Audio data received will be writted to the WAV file requested in the [CLI args](cli::Args).
+/// Audio data received will be written to the WAV file requested in the [CLI args](cli::Args).
 fn run_processing_loop(
     file_name: &str,
     receiver: Receiver<Vec<u8>>,
