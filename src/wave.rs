@@ -184,7 +184,7 @@ impl WaveWriter {
         let tmp_file_name = format!("wavdata-{}", tmp_file_id);
         tmp_dir.push(&tmp_file_name);
 
-        trace!("Creating temporary file: {tmp_file_name}");
+        debug!("Creating temporary file: {tmp_file_name}");
 
         let file = File::create(&tmp_dir)?;
         let buffered_writer = BufWriter::new(file);
