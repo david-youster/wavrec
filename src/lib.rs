@@ -1,3 +1,13 @@
+//! The WAV Recorder library crate exposes a single [`run`] function.
+//!
+//! Calling this function will begin the audio capture loop in a background thread, and the audio
+//! processing loop on the main thread. The processing loop will run until the application is
+//! terminated with `Ctrl-C`, at which point the buffered audio data will be written to the final
+//! WAV file.
+//!
+//! Audio format settings and other options can be set by setting the desired values via the
+//! [`cli::Args`] parameter.
+#[warn(missing_docs)]
 mod audio;
 pub mod cli;
 mod wave;

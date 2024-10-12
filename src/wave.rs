@@ -166,6 +166,8 @@ impl WaveFile {
 
 /// Buffered WAV file writer. Opening a WAV file allows writing to a buffer, which can later be
 /// written to disk.
+///
+/// To use, a writer should be opened, written to, committed and closed.
 pub struct WaveWriter {
     buffered_writer: BufWriter<File>,
     file_name: String,
@@ -176,8 +178,9 @@ pub struct WaveWriter {
 
 impl WaveWriter {
     /// Prepares a new WaveWriter for writing audio data to disk.
-    /// This uses a temporary file as a data buffer, which can later be written to a correctly
-    /// formatted WAV file.
+    ///
+    /// This uses a temporary file as a data buffer, which will later be written to a correctly
+    /// formatted WAV file, when the [`WaveWriter::commit`] method is called.
     pub fn open(file_name: &str, audio_format_info: AudioFormatInfo) -> Res<Self> {
         let mut tmp_dir = env::temp_dir();
         let tmp_file_id = Uuid::new_v4().to_string();

@@ -1,3 +1,8 @@
+//! WAV Recorder is a CLI application that can be used to capture the audio playback from a Windows
+//! device and record it to a WAV file. The output audio format is configurable based on various
+//! options made available through WASAPI.
+//!
+//! Run the application with the `-h` flag for detailed information on the available options.
 use clap::Parser;
 use env_logger::Builder;
 use log::{error, info};
