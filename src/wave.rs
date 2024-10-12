@@ -211,7 +211,7 @@ impl WaveWriter {
 
     /// Commit the written audio data to disk
     pub fn commit(&mut self) -> Nothing {
-        trace!("Preparing to write from temp file to WAV file");
+        debug!("Preparing to write from temp file to WAV file");
         self.buffered_writer.flush()?;
         let mut data = Vec::new();
         File::open(&self.tmp_file_name)?.read_to_end(&mut data)?;
@@ -223,7 +223,7 @@ impl WaveWriter {
 
     /// Clean up the temporary file used by the [`BufWriter`].
     pub fn close(self) -> Nothing {
-        trace!("Removing temporary file");
+        debug!("Removing temporary file");
         if Path::new(&self.tmp_file_name).exists() {
             fs::remove_file(&self.tmp_file_name)?;
         }
