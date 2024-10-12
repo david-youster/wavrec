@@ -222,8 +222,6 @@ impl WaveWriter {
 impl Drop for WaveWriter {
     /// Clean up the temporary file used by the [BufWriter].
     fn drop(&mut self) {
-        self.buffered_writer.flush().unwrap();
-
         trace!("Removing temporary file");
         if Path::new(&self.tmp_file_name).exists() {
             fs::remove_file(&self.tmp_file_name).unwrap();
