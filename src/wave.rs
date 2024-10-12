@@ -1,17 +1,35 @@
 use std::{
     env,
+    error::Error,
+    fmt::Display,
     fs::{self, File},
     io::{BufWriter, Read, Write},
     path::Path,
 };
 
-use log::{debug, trace};
+use log::{debug, error, trace};
 use uuid::Uuid;
 
 use crate::{audio::AudioFormatInfo, Nothing, Res};
 
 type TwoByteField = [u8; 2];
 type FourByteField = [u8; 4];
+
+#[derive(Debug)]
+enum WaveError {
+    MaxFileSizeReached,
+}
+
+impl Error for WaveError {}
+
+impl Display for WaveError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let message = match self {
+            WaveError::MaxFileSizeReached => "WAV file cannot exceed 4 GiB in size",
+        };
+        write!(f, "{}", message)
+    }
+}
 
 /// Represents the content of the header section of the WAVE file format.
 /// Some resources describing the file format (last accessed 16/09/24):
@@ -177,6 +195,9 @@ pub struct WaveWriter {
 }
 
 impl WaveWriter {
+    // 32 bit integer max value - the header size - the size of the data section fields
+    const WAV_MAX_BYTES: usize = u32::MAX as usize - WaveHeader::BYTES_IN_HEADER - 8;
+
     /// Prepares a new WaveWriter for writing audio data to disk.
     ///
     /// This uses a temporary file as a data buffer, which will later be written to a correctly
@@ -205,6 +226,11 @@ impl WaveWriter {
 
     /// Write a chunk of data to the buffer. Audio data should be appropriately formatted.
     pub fn write(&mut self, data: Vec<u8>) -> Nothing {
+        let bytes_to_write = data.len() + self.bytes_written;
+        if bytes_to_write > Self::WAV_MAX_BYTES {
+            error!("The maximum file size has been reached");
+            return Err(Box::new(WaveError::MaxFileSizeReached));
+        }
         self.bytes_written += self.buffered_writer.write(&data)?;
         Ok(())
     }

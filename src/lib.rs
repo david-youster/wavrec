@@ -14,7 +14,7 @@ mod wave;
 
 use audio::{sys::LoopbackRecorder, AudioFormatInfo, AudioLoopback, RequestedAudioFormatInfo};
 use cli::Args;
-use log::info;
+use log::{error, info};
 use std::{
     error::Error,
     sync::{
@@ -38,7 +38,7 @@ type Nothing = Res<()>;
 /// not in use, nothing will be captured.
 ///
 /// # Panic
-/// Panics if either the audio thread or audio processing loop fails
+/// Panics if the audio processing loop fails.
 pub fn run(args: Args) -> Nothing {
     let is_running = Arc::new(AtomicBool::new(true));
     let (audio_transmitter, audio_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = mpsc::channel();
@@ -90,9 +90,6 @@ fn run_audio_thread(transmitter: Sender<Vec<u8>>, loopback_stream: Arc<dyn Audio
 /// Handles the audio data received from the audio thread.
 ///
 /// Audio data received will be writted to the WAV file requested in the [CLI args](cli::Args).
-///
-/// # Panic
-/// Panics if the [`WaveWriter`] data [`write`](wave::WaveWriter::write) fails for some reason.
 fn run_processing_loop(
     file_name: &str,
     receiver: Receiver<Vec<u8>>,
@@ -104,8 +101,10 @@ fn run_processing_loop(
     let mut file_writer = WaveWriter::open(file_name, format)?;
     while is_running.load(Ordering::Relaxed) {
         let _ = receiver.try_recv().map(|chunk| {
-            // TODO - write failure should be handled
-            file_writer.write(chunk).unwrap();
+            if let Err(err) = file_writer.write(chunk) {
+                error!("Error while writing WAV file: {err}");
+                is_running.store(false, Ordering::Relaxed);
+            }
         });
     }
     info!("Creating file: {file_name}");
