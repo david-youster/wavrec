@@ -12,11 +12,15 @@ mod audio;
 pub mod cli;
 mod wave;
 
-use audio::{sys::LoopbackRecorder, AudioFormatInfo, AudioLoopback, RequestedAudioFormatInfo};
+use audio::{
+    sys::LoopbackRecorder, AudioDataMessage, AudioFormatInfo, AudioLoopback,
+    RequestedAudioFormatInfo,
+};
 use cli::Args;
 use log::{error, info};
 use std::{
     error::Error,
+    fmt::Display,
     sync::{
         atomic::{AtomicBool, Ordering},
         mpsc::{self, Receiver, Sender},
@@ -29,6 +33,19 @@ use wave::WaveWriter;
 type Res<T> = Result<T, Box<dyn Error>>;
 type Nothing = Res<()>;
 
+#[derive(Debug)]
+struct AppError {
+    message: String,
+}
+
+impl Error for AppError {}
+
+impl Display for AppError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
 /// Run the application.
 ///
 /// This will spawn a thread which will pull data from the default audio device and write it to a
@@ -36,12 +53,12 @@ type Nothing = Res<()>;
 ///
 /// The application will only capture data while there is audio playing. When the audio device is
 /// not in use, nothing will be captured.
-///
-/// # Panic
-/// Panics if the audio processing loop fails.
 pub fn run(args: Args) -> Nothing {
     let is_running = Arc::new(AtomicBool::new(true));
-    let (audio_transmitter, audio_receiver): (Sender<Vec<u8>>, Receiver<Vec<u8>>) = mpsc::channel();
+    let (audio_transmitter, audio_receiver): (
+        Sender<AudioDataMessage>,
+        Receiver<AudioDataMessage>,
+    ) = mpsc::channel();
 
     let requested_format = RequestedAudioFormatInfo {
         sample_rate: args.sample_rate,
@@ -54,7 +71,7 @@ pub fn run(args: Args) -> Nothing {
     let audio_format = loopback_stream.get_audio_format();
     info!("Loopback recorder initialized with format: {audio_format}");
 
-    setup_terminate_handler(Arc::clone(&is_running));
+    setup_terminate_handler(Arc::clone(&is_running))?;
     run_audio_thread(audio_transmitter, Arc::clone(&loopback_stream));
     run_processing_loop(&args.file_name(), audio_receiver, audio_format, is_running)?;
 
@@ -62,28 +79,32 @@ pub fn run(args: Args) -> Nothing {
 }
 
 /// Initializes the Ctrl-C handler.
-///
-/// # Panic
-/// Panics if the [`ctrlc`] crate fails to set the handler
-fn setup_terminate_handler(is_running_flag: Arc<AtomicBool>) {
-    ctrlc::set_handler(move || {
+fn setup_terminate_handler(is_running_flag: Arc<AtomicBool>) -> Nothing {
+    let result = ctrlc::set_handler(move || {
         info!("Shutting down");
         is_running_flag.store(false, Ordering::Relaxed);
-    })
-    .expect("Unable to set Ctrl-C signal handler");
+    });
+
+    if result.is_err() {
+        return Err(Box::new(AppError {
+            message: String::from("Failed to set Ctrl-C handler"),
+        }));
+    };
+
+    Ok(())
 }
 
 /// Initializes the audio thread.
 ///
 /// This thread will run in the background, and continuously send data to the provided
 /// [`transmitter`](std::sync::mpsc::Sender), when the audio device is in use.
-///
-/// # Panic
-/// Panics if the [`LoopbackRecorder`] fails for some reason.
-fn run_audio_thread(transmitter: Sender<Vec<u8>>, loopback_stream: Arc<dyn AudioLoopback>) {
+fn run_audio_thread(
+    transmitter: Sender<AudioDataMessage>,
+    loopback_stream: Arc<dyn AudioLoopback>,
+) {
     info!("Starting audio thread");
     thread::spawn(move || {
-        loopback_stream.capture(transmitter).unwrap();
+        let _ = loopback_stream.capture(transmitter);
     });
 }
 
@@ -92,7 +113,7 @@ fn run_audio_thread(transmitter: Sender<Vec<u8>>, loopback_stream: Arc<dyn Audio
 /// Audio data received will be written to the WAV file requested in the [CLI args](cli::Args).
 fn run_processing_loop(
     file_name: &str,
-    receiver: Receiver<Vec<u8>>,
+    receiver: Receiver<AudioDataMessage>,
     format: AudioFormatInfo,
     is_running: Arc<AtomicBool>,
 ) -> Nothing {
@@ -100,10 +121,12 @@ fn run_processing_loop(
     // Handle the captured data sent from the audio thread
     let mut file_writer = WaveWriter::open(file_name, format)?;
     while is_running.load(Ordering::Relaxed) {
-        let _ = receiver.try_recv().map(|chunk| {
-            if let Err(err) = file_writer.write(chunk) {
+        let _ = receiver.try_recv().map(|chunk| match chunk {
+            AudioDataMessage::AudioData(chunk) => file_writer.write(chunk),
+            AudioDataMessage::Error(err) => {
                 error!("Error while writing WAV file: {err}");
                 is_running.store(false, Ordering::Relaxed);
+                Ok(())
             }
         });
     }

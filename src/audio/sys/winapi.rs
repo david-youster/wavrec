@@ -6,7 +6,9 @@ use wasapi::{AudioClient, Direction, SampleType, ShareMode, WaveFormat};
 
 use crate::{Nothing, Res};
 
-use crate::audio::{AudioFormatInfo, AudioLoopback, RequestedAudioFormatInfo, SampleFormat};
+use crate::audio::{
+    AudioDataMessage, AudioFormatInfo, AudioLoopback, RequestedAudioFormatInfo, SampleFormat,
+};
 
 const TIMEOUT: u32 = 1000000;
 
@@ -14,6 +16,7 @@ const TIMEOUT: u32 = 1000000;
 enum WasapiError {
     InitMtaFailure,
     InvalidBitDepth,
+    AudioCaptureFailed,
 }
 
 impl Error for WasapiError {}
@@ -23,6 +26,7 @@ impl Display for WasapiError {
         let message = match self {
             WasapiError::InitMtaFailure => "Failed to initialize WASAPI MTA",
             WasapiError::InvalidBitDepth => "Invalid bit depth requested",
+            WasapiError::AudioCaptureFailed => "Audio capture failed",
         };
         write!(f, "{}", message)
     }
@@ -122,7 +126,7 @@ impl AudioLoopback for WasapiLoopbackRecorder {
     }
 
     /// Capture audio from the loopback stream.
-    fn capture(&self, transmitter: Sender<Vec<u8>>) -> Nothing {
+    fn capture(&self, transmitter: Sender<AudioDataMessage>) -> Nothing {
         debug!("Preparing WASAPI loopback capture");
 
         let block_align = self.wasapi_format.get_blockalign();
@@ -136,13 +140,26 @@ impl AudioLoopback for WasapiLoopbackRecorder {
         );
         self.client.start_stream()?;
 
-        loop {
+        'capture: loop {
             while sample_queue.len() > block_align as usize * self.chunk_size {
                 let mut chunk = vec![0u8; block_align as usize * self.chunk_size];
                 for e in chunk.iter_mut() {
-                    *e = sample_queue.pop_front().unwrap();
+                    match sample_queue.pop_front() {
+                        // Successfully read the next sample, save it to the chunk.
+                        Some(value) => *e = value,
+                        // Otherwise, signal the error state and shut down the audio loop.
+                        None => {
+                            error!("Failed to read next sample from audio device");
+                            let message =
+                                AudioDataMessage::Error(Box::new(WasapiError::AudioCaptureFailed));
+                            transmitter.send(message)?;
+                            self.client.stop_stream()?;
+                            break 'capture;
+                        }
+                    };
                 }
-                transmitter.send(chunk)?
+
+                transmitter.send(AudioDataMessage::AudioData(chunk))?;
             }
 
             capture_client.read_from_device_to_deque(&mut sample_queue)?;

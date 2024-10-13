@@ -1,7 +1,4 @@
-use std::{
-    fmt::Display,
-    sync::mpsc::Sender,
-};
+use std::{error::Error, fmt::Display, sync::mpsc::Sender};
 
 use clap::ValueEnum;
 
@@ -107,6 +104,12 @@ impl Display for AudioFormatInfo {
     }
 }
 
+/// Message to be sent across the audio MPSC channel
+pub enum AudioDataMessage {
+    AudioData(Vec<u8>),
+    Error(Box<dyn Error + Send>),
+}
+
 pub trait AudioLoopback: Send + Sync {
     /// Create a new instance of the `AudioLoopback` system.
     fn create(format: RequestedAudioFormatInfo) -> Res<impl AudioLoopback>
@@ -120,7 +123,7 @@ pub trait AudioLoopback: Send + Sync {
     fn get_audio_format(&self) -> AudioFormatInfo;
 
     /// Start the audio capture loop. Audio will be written to the [`transmitter`](std::sync::mpsc::Sender).
-    fn capture(&self, transmitter: Sender<Vec<u8>>) -> Nothing;
+    fn capture(&self, transmitter: Sender<AudioDataMessage>) -> Nothing;
 }
 
 #[cfg(test)]
